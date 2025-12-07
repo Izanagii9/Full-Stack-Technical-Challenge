@@ -14,6 +14,7 @@ function App() {
         <header className="app-header">
           <div className="header-content">
             <div className="header-top">
+              <div className="header-spacer"></div>
               <div className="header-text">
                 <h1 className="site-title">{t('header.title')}</h1>
                 <p className="site-subtitle">{t('header.subtitle')}</p>
