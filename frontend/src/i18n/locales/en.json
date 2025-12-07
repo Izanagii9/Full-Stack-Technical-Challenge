@@ -1,0 +1,30 @@
+{
+  "page": {
+    "title": "Auto-Generated Blog"
+  },
+  "header": {
+    "title": "Auto-Generated Blog",
+    "subtitle": "AI-Powered Content Daily"
+  },
+  "article": {
+    "latestArticles": "Latest Articles",
+    "backToArticles": "Back to Articles",
+    "by": "By",
+    "readMore": "Read More",
+    "notFound": "Article not found."
+  },
+  "loading": {
+    "articles": "Loading articles...",
+    "article": "Loading article..."
+  },
+  "error": {
+    "loadingArticles": "Error loading articles",
+    "loadingArticle": "Error loading article"
+  },
+  "empty": {
+    "noArticles": "No articles found."
+  },
+  "footer": {
+    "copyright": "© 2025 Auto-Generated Blog. All rights reserved."
+  }
+}
