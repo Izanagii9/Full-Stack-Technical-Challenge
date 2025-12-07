@@ -1,5 +1,5 @@
 import { articleService } from '../services/articleService.js';
-import { renderTemplate, renderPartial } from '../utils/templateRenderer.js';
+import { renderTemplate } from '../utils/templateRenderer.js';
 
 // Get all articles
 export const getAllArticles = async (req, res, next) => {
@@ -10,20 +10,9 @@ export const getAllArticles = async (req, res, next) => {
     const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
 
     if (acceptsHtml) {
-      const articlesHtml = articles.map(article =>
-        renderPartial('article-card', {
-          id: article.id,
-          title: article.title,
-          excerpt: article.excerpt,
-          author: article.author,
-          date: new Date(article.createdAt).toLocaleDateString(),
-          tags: article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')
-        })
-      ).join('');
-
       const html = renderTemplate('articles', {
         articlesCount: articles.length,
-        articlesHtml
+        articlesHtml: JSON.stringify(articles, null, 2)
       });
       res.send(html);
     } else {
@@ -44,15 +33,9 @@ export const getArticleById = async (req, res, next) => {
     const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
 
     if (acceptsHtml) {
-      const tagsHtml = article.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
-
       const html = renderTemplate('article-detail', {
         id: article.id,
-        title: article.title,
-        author: article.author,
-        date: new Date(article.createdAt).toLocaleDateString(),
-        content: article.content,
-        tagsHtml
+        articleJson: JSON.stringify(article, null, 2)
       });
       res.send(html);
     } else {

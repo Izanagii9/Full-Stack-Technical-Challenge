@@ -3,19 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Articles - Auto-Generated Blog API</title>
-  <link rel="stylesheet" href="/css/articles.css">
+  <title>Articles API</title>
+  <link rel="stylesheet" href="/css/api.css">
 </head>
 <body>
   <div class="container">
-    <a href="/health" class="back-link">← Back to Health Check</a>
-    <div class="header">
-      <h1>📚 All Articles</h1>
-      <p>Auto-Generated Blog API - {{articlesCount}} articles available</p>
-    </div>
-    <div class="articles-grid">
-      {{articlesHtml}}
-    </div>
+    <h1>GET /api/articles</h1>
+    <p><a href="/health">← Back to Health Check</a></p>
+
+    <h2>Response ({{articlesCount}} articles)</h2>
+    <pre>{{articlesHtml}}</pre>
   </div>
 </body>
 </html>
