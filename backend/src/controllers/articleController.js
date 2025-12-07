@@ -1,4 +1,5 @@
 import { articleService } from '../services/articleService.js';
+import { renderTemplate } from '../utils/templateRenderer.js';
 
 // Get all articles
 export const getAllArticles = async (req, res, next) => {
@@ -27,29 +28,11 @@ export const getAllArticles = async (req, res, next) => {
         </div>
       `).join('');
 
-      res.send(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Articles - Auto-Generated Blog API</title>
-          <link rel="stylesheet" href="/css/articles.css">
-        </head>
-        <body>
-          <div class="container">
-            <a href="/health" class="back-link">← Back to Health Check</a>
-            <div class="header">
-              <h1>📚 All Articles</h1>
-              <p>Auto-Generated Blog API - ${articles.length} articles available</p>
-            </div>
-            <div class="articles-grid">
-              ${articlesHtml}
-            </div>
-          </div>
-        </body>
-        </html>
-      `);
+      const html = renderTemplate('articles', {
+        articlesCount: articles.length,
+        articlesHtml
+      });
+      res.send(html);
     } else {
       res.json(articles);
     }
@@ -68,37 +51,17 @@ export const getArticleById = async (req, res, next) => {
     const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
 
     if (acceptsHtml) {
-      res.send(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${article.title} - Auto-Generated Blog API</title>
-          <link rel="stylesheet" href="/css/article-detail.css">
-        </head>
-        <body>
-          <div class="container">
-            <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-              <a href="/health" class="back-link">← Health Check</a>
-              <a href="/api/articles" class="back-link">← All Articles</a>
-            </div>
-            <div class="article">
-              <span class="article-id">#${article.id}</span>
-              <h1 class="article-title">${article.title}</h1>
-              <div class="article-meta">
-                <span class="meta-item">👤 ${article.author}</span>
-                <span class="meta-item">📅 ${new Date(article.createdAt).toLocaleDateString()}</span>
-              </div>
-              <div class="article-content">${article.content}</div>
-              <div class="article-tags">
-                ${article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
-              </div>
-            </div>
-          </div>
-        </body>
-        </html>
-      `);
+      const tagsHtml = article.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+
+      const html = renderTemplate('article-detail', {
+        id: article.id,
+        title: article.title,
+        author: article.author,
+        date: new Date(article.createdAt).toLocaleDateString(),
+        content: article.content,
+        tagsHtml
+      });
+      res.send(html);
     } else {
       res.json(article);
     }

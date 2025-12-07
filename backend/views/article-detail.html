@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}} - Auto-Generated Blog API</title>
+  <link rel="stylesheet" href="/css/article-detail.css">
+</head>
+<body>
+  <div class="container">
+    <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+      <a href="/health" class="back-link">← Health Check</a>
+      <a href="/api/articles" class="back-link">← All Articles</a>
+    </div>
+    <div class="article">
+      <span class="article-id">#{{id}}</span>
+      <h1 class="article-title">{{title}}</h1>
+      <div class="article-meta">
+        <span class="meta-item">👤 {{author}}</span>
+        <span class="meta-item">📅 {{date}}</span>
+      </div>
+      <div class="article-content">{{content}}</div>
+      <div class="article-tags">
+        {{tagsHtml}}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

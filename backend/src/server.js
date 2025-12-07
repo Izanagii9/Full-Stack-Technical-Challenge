@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import articleRoutes from './routes/articleRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { renderTemplate } from './utils/templateRenderer.js';
 
 // Load environment variables
 dotenv.config();
@@ -40,58 +41,13 @@ app.get('/health', (req, res) => {
   const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
 
   if (acceptsHtml) {
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Health Check - Auto-Generated Blog API</title>
-        <link rel="stylesheet" href="/css/health.css">
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="status-icon">✅</div>
-            <h1>Server is Running</h1>
-            <p class="subtitle">Auto-Generated Blog API</p>
-          </div>
-
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">Status</div>
-              <div class="info-value status-ok">${data.status.toUpperCase()}</div>
-            </div>
-
-            <div class="info-item">
-              <div class="info-label">Environment</div>
-              <div class="info-value">${data.environment}</div>
-            </div>
-
-            <div class="info-item">
-              <div class="info-label">Port</div>
-              <div class="info-value">${data.port}</div>
-            </div>
-
-            <div class="info-item">
-              <div class="info-label">Timestamp</div>
-              <div class="info-value">${new Date(data.timestamp).toLocaleString()}</div>
-            </div>
-          </div>
-
-          <div class="api-links">
-            <div class="info-label" style="margin-bottom: 12px;">API Endpoints</div>
-            <a href="/api/articles" class="api-link">📄 GET /api/articles</a>
-            <a href="/api/articles/1" class="api-link">📰 GET /api/articles/1</a>
-          </div>
-
-          <div class="footer">
-            <p>Backend API for Auto-Generated Blog</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `);
+    const html = renderTemplate('health', {
+      status: data.status.toUpperCase(),
+      environment: data.environment,
+      port: data.port,
+      timestamp: new Date(data.timestamp).toLocaleString()
+    });
+    res.send(html);
   } else {
     res.json(data);
   }
