@@ -134,8 +134,14 @@ app.get('/health', (req, res) => {
             margin: 4px 0;
             border-radius: 4px;
             transition: background 0.2s;
+            outline: none;
           }
           .api-link:hover {
+            background: #f7fafc;
+          }
+          .api-link:focus-visible {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
             background: #f7fafc;
           }
         </style>

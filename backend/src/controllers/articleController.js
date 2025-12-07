@@ -72,8 +72,14 @@ export const getAllArticles = async (req, res, next) => {
               background: rgba(255, 255, 255, 0.2);
               border-radius: 8px;
               transition: background 0.2s;
+              outline: none;
             }
             .back-link:hover {
+              background: rgba(255, 255, 255, 0.3);
+            }
+            .back-link:focus-visible {
+              outline: 2px solid white;
+              outline-offset: 2px;
               background: rgba(255, 255, 255, 0.3);
             }
             .articles-grid {
@@ -91,6 +97,10 @@ export const getAllArticles = async (req, res, next) => {
               flex-direction: column;
             }
             .article-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            }
+            .article-card:has(.read-more:focus-visible) {
               transform: translateY(-4px);
               box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
             }
@@ -136,25 +146,27 @@ export const getAllArticles = async (req, res, next) => {
               display: flex;
               flex-wrap: wrap;
               gap: 8px;
-              margin-bottom: 16px;
+              margin-bottom: 20px;
             }
             .tag {
-              background: #edf2f7;
-              color: #4a5568;
-              padding: 4px 12px;
-              border-radius: 12px;
-              font-size: 12px;
+              background: rgba(102, 126, 234, 0.15);
+              color: #5a67d8;
+              padding: 6px 14px;
+              border-radius: 16px;
+              font-size: 13px;
               font-weight: 500;
             }
             .read-more {
-              color: #667eea;
+              color: #5a67d8;
               text-decoration: none;
-              font-weight: 600;
-              transition: color 0.2s;
+              font-weight: 500;
               align-self: flex-start;
+              margin-top: 4px;
+              outline: none;
             }
-            .read-more:hover {
-              color: #764ba2;
+            .read-more:focus-visible {
+              outline: 2px solid #5a67d8;
+              outline-offset: 4px;
             }
           </style>
         </head>
@@ -222,8 +234,14 @@ export const getArticleById = async (req, res, next) => {
               background: rgba(255, 255, 255, 0.2);
               border-radius: 8px;
               transition: background 0.2s;
+              outline: none;
             }
             .back-link:hover {
+              background: rgba(255, 255, 255, 0.3);
+            }
+            .back-link:focus-visible {
+              outline: 2px solid white;
+              outline-offset: 2px;
               background: rgba(255, 255, 255, 0.3);
             }
             .article {
@@ -272,10 +290,10 @@ export const getArticleById = async (req, res, next) => {
               gap: 8px;
             }
             .tag {
-              background: #edf2f7;
-              color: #4a5568;
+              background: rgba(102, 126, 234, 0.15);
+              color: #5a67d8;
               padding: 6px 16px;
-              border-radius: 12px;
+              border-radius: 16px;
               font-size: 14px;
               font-weight: 500;
             }
