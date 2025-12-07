@@ -1,7 +1,11 @@
 .article-detail-container {
+  flex: 1;
   max-width: 800px;
+  width: 100%;
   margin: 0 auto;
   padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .back-link {
@@ -94,41 +98,4 @@
 
 .article-content p {
   margin: 0 0 16px 0;
-}
-
-.loading,
-.error,
-.empty {
-  text-align: center;
-  padding: 60px 20px;
-  font-size: 18px;
-}
-
-.loading {
-  color: #0369a1;
-}
-
-.error {
-  color: #dc2626;
-}
-
-.empty {
-  color: #666;
-}
-
-.back-button {
-  margin-top: 16px;
-  padding: 10px 20px;
-  background: #0369a1;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.back-button:hover {
-  background: #0c4a6e;
 }
