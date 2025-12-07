@@ -1,0 +1,30 @@
+{
+  "page": {
+    "title": "Blog Auto-Gerado"
+  },
+  "header": {
+    "title": "Blog Auto-Gerado",
+    "subtitle": "Conteúdo com IA Diariamente"
+  },
+  "article": {
+    "latestArticles": "Últimos Artigos",
+    "backToArticles": "Voltar aos Artigos",
+    "by": "Por",
+    "readMore": "Ler Mais",
+    "notFound": "Artigo não encontrado."
+  },
+  "loading": {
+    "articles": "Carregando artigos...",
+    "article": "Carregando artigo..."
+  },
+  "error": {
+    "loadingArticles": "Erro ao carregar artigos",
+    "loadingArticle": "Erro ao carregar artigo"
+  },
+  "empty": {
+    "noArticles": "Nenhum artigo encontrado."
+  },
+  "footer": {
+    "copyright": "© 2025 Blog Auto-Gerado. Todos os direitos reservados."
+  }
+}
