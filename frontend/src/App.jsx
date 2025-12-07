@@ -1,12 +1,17 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useEffect } from 'react'
 import { HomePage } from './pages/HomePage'
 import { ArticlePage } from './pages/ArticlePage'
 import { LanguageSwitcher } from './components/LanguageSwitcher/LanguageSwitcher'
 import './App.css'
 
 function App() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+
+  useEffect(() => {
+    document.title = t('page.title')
+  }, [t, i18n.language])
 
   return (
     <Router>
