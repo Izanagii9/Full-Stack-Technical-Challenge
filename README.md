@@ -4,9 +4,8 @@ A modern full-stack blog application with AI-powered content generation, built w
 
 ## 🚀 Features
 
-- **Frontend**: React 18 with Redux Toolkit state management
-- **Backend**: Node.js + Express REST API
-- **Internationalization**: English and Portuguese (i18next)
+- **Frontend**: React 18 with Redux Toolkit state management and i18next (EN/PT)
+- **Backend**: Node.js + Express REST API (English only)
 - **Responsive Design**: Mobile, tablet, and desktop support
 - **Clean Architecture**: Service layer pattern with separation of concerns
 - **AI Integration**: Ready for AI-generated content (Phase 3)
