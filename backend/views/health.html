@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Health Check - Auto-Generated Blog API</title>
+  <link rel="stylesheet" href="/css/health.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="status-icon">✅</div>
+      <h1>Server is Running</h1>
+      <p class="subtitle">Auto-Generated Blog API</p>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Status</div>
+        <div class="info-value status-ok">{{status}}</div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-label">Environment</div>
+        <div class="info-value">{{environment}}</div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-label">Port</div>
+        <div class="info-value">{{port}}</div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-label">Timestamp</div>
+        <div class="info-value">{{timestamp}}</div>
+      </div>
+    </div>
+
+    <div class="api-links">
+      <div class="info-label" style="margin-bottom: 12px;">API Endpoints</div>
+      <a href="/api/articles" class="api-link">📄 GET /api/articles</a>
+      <a href="/api/articles/1" class="api-link">📰 GET /api/articles/1</a>
+    </div>
+
+    <div class="footer">
+      <p>Backend API for Auto-Generated Blog</p>
+    </div>
+  </div>
+</body>
+</html>
