@@ -9,6 +9,10 @@ import {
   selectArticlesError,
   clearSelectedArticle
 } from '../../store/slices/articlesSlice'
+import { LoadingState } from '../LoadingState/LoadingState'
+import { ErrorState } from '../ErrorState/ErrorState'
+import { EmptyState } from '../EmptyState/EmptyState'
+import { StateContainer } from '../StateContainer/StateContainer'
 import './ArticleDetail.css'
 
 export const ArticleDetail = () => {
@@ -56,7 +60,9 @@ export const ArticleDetail = () => {
   if (loading) {
     return (
       <div className="article-detail-container">
-        <div className="loading">{t('loading.article')}</div>
+        <StateContainer>
+          <LoadingState message={t('loading.article')} />
+        </StateContainer>
       </div>
     )
   }
@@ -64,12 +70,15 @@ export const ArticleDetail = () => {
   if (error) {
     return (
       <div className="article-detail-container">
-        <div className="error">
-          <p>{t('error.loadingArticle')}: {error}</p>
-          <button onClick={() => navigate('/')} className="back-button">
-            {t('article.backToArticles')}
-          </button>
-        </div>
+        <StateContainer>
+          <ErrorState
+            title={t('error.loadingArticle')}
+            message={error}
+            onRetry={() => dispatch(fetchArticleById(id))}
+            onBack={() => navigate('/')}
+            backLabel={t('article.backToArticles')}
+          />
+        </StateContainer>
       </div>
     )
   }
@@ -77,7 +86,9 @@ export const ArticleDetail = () => {
   if (!article) {
     return (
       <div className="article-detail-container">
-        <div className="empty">{t('article.notFound')}</div>
+        <StateContainer>
+          <EmptyState message={t('article.notFound')} icon="📄" />
+        </StateContainer>
       </div>
     )
   }
