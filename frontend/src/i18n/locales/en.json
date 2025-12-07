@@ -15,14 +15,21 @@
   },
   "loading": {
     "articles": "Loading articles...",
-    "article": "Loading article..."
+    "article": "Loading article...",
+    "default": "Loading..."
   },
   "error": {
     "loadingArticles": "Error loading articles",
-    "loadingArticle": "Error loading article"
+    "loadingArticle": "Error loading article",
+    "default": "An error occurred"
   },
   "empty": {
-    "noArticles": "No articles found."
+    "noArticles": "No articles found.",
+    "default": "No content available"
+  },
+  "action": {
+    "retry": "Try Again",
+    "back": "Go Back"
   },
   "footer": {
     "copyright": "© 2025 Auto-Generated Blog. All rights reserved."
