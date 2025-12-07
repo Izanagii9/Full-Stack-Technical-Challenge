@@ -39,6 +39,10 @@ body {
   width: 100%;
 }
 
+.header-spacer {
+  width: 80px;
+}
+
 .header-text {
   flex: 1;
   text-align: center;
@@ -87,6 +91,10 @@ body {
 
   .app-header {
     padding: 24px 16px;
+  }
+
+  .header-spacer {
+    display: none;
   }
 
   .header-top {
