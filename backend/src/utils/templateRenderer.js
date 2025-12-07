@@ -17,3 +17,16 @@ export const renderTemplate = (templateName, data = {}) => {
 
   return html;
 };
+
+export const renderPartial = (partialName, data = {}) => {
+  const partialPath = path.join(__dirname, '../../views/partials', `${partialName}.html`);
+  let html = fs.readFileSync(partialPath, 'utf-8');
+
+  // Replace all placeholders with data
+  Object.keys(data).forEach(key => {
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    html = html.replace(regex, data[key]);
+  });
+
+  return html;
+};

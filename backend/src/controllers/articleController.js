@@ -1,5 +1,5 @@
 import { articleService } from '../services/articleService.js';
-import { renderTemplate } from '../utils/templateRenderer.js';
+import { renderTemplate, renderPartial } from '../utils/templateRenderer.js';
 
 // Get all articles
 export const getAllArticles = async (req, res, next) => {
@@ -10,23 +10,16 @@ export const getAllArticles = async (req, res, next) => {
     const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
 
     if (acceptsHtml) {
-      const articlesHtml = articles.map(article => `
-        <div class="article-card">
-          <div class="article-header">
-            <h2 class="article-title">${article.title}</h2>
-            <span class="article-id">#${article.id}</span>
-          </div>
-          <p class="article-excerpt">${article.excerpt}</p>
-          <div class="article-meta">
-            <span class="meta-item">👤 ${article.author}</span>
-            <span class="meta-item">📅 ${new Date(article.createdAt).toLocaleDateString()}</span>
-          </div>
-          <div class="article-tags">
-            ${article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
-          </div>
-          <a href="/api/articles/${article.id}" class="read-more">Read More →</a>
-        </div>
-      `).join('');
+      const articlesHtml = articles.map(article =>
+        renderPartial('article-card', {
+          id: article.id,
+          title: article.title,
+          excerpt: article.excerpt,
+          author: article.author,
+          date: new Date(article.createdAt).toLocaleDateString(),
+          tags: article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')
+        })
+      ).join('');
 
       const html = renderTemplate('articles', {
         articlesCount: articles.length,
