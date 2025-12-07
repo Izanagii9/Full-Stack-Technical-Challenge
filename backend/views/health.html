@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Health Check</title>
+  <link rel="stylesheet" href="/css/api.css">
+</head>
+<body>
+  <div class="container">
+    <h1>API Health Check</h1>
+
+    <h2>Status</h2>
+    <div class="info-item">
+      <span class="label">Status:</span>
+      <span class="status">{{status}}</span>
+    </div>
+    <div class="info-item">
+      <span class="label">Environment:</span>
+      <span>{{environment}}</span>
+    </div>
+    <div class="info-item">
+      <span class="label">Port:</span>
+      <span>{{port}}</span>
+    </div>
+    <div class="info-item">
+      <span class="label">Timestamp:</span>
+      <span>{{timestamp}}</span>
+    </div>
+
+    <h2>Available Endpoints</h2>
+    <div class="endpoint">
+      <span class="method">GET</span>
+      <a href="/api/articles">/api/articles</a>
+      <span> - List all articles</span>
+    </div>
+    <div class="endpoint">
+      <span class="method">GET</span>
+      <a href="/api/articles/1">/api/articles/:id</a>
+      <span> - Get article by ID</span>
+    </div>
+  </div>
+</body>
+</html>
