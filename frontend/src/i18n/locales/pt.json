@@ -15,14 +15,21 @@
   },
   "loading": {
     "articles": "Carregando artigos...",
-    "article": "Carregando artigo..."
+    "article": "Carregando artigo...",
+    "default": "Carregando..."
   },
   "error": {
     "loadingArticles": "Erro ao carregar artigos",
-    "loadingArticle": "Erro ao carregar artigo"
+    "loadingArticle": "Erro ao carregar artigo",
+    "default": "Ocorreu um erro"
   },
   "empty": {
-    "noArticles": "Nenhum artigo encontrado."
+    "noArticles": "Nenhum artigo encontrado.",
+    "default": "Nenhum conteúdo disponível"
+  },
+  "action": {
+    "retry": "Tentar Novamente",
+    "back": "Voltar"
   },
   "footer": {
     "copyright": "© 2025 Blog Auto-Gerado. Todos os direitos reservados."

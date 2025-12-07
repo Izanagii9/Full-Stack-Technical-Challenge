@@ -8,6 +8,10 @@ import {
   selectArticlesError
 } from '../../store/slices/articlesSlice'
 import { ArticleCard } from '../ArticleCard/ArticleCard'
+import { LoadingState } from '../LoadingState/LoadingState'
+import { ErrorState } from '../ErrorState/ErrorState'
+import { EmptyState } from '../EmptyState/EmptyState'
+import { StateContainer } from '../StateContainer/StateContainer'
 import './ArticleList.css'
 
 export const ArticleList = () => {
@@ -24,7 +28,9 @@ export const ArticleList = () => {
   if (loading) {
     return (
       <div className="article-list-container">
-        <div className="loading">{t('loading.articles')}</div>
+        <StateContainer>
+          <LoadingState message={t('loading.articles')} />
+        </StateContainer>
       </div>
     )
   }
@@ -32,7 +38,13 @@ export const ArticleList = () => {
   if (error) {
     return (
       <div className="article-list-container">
-        <div className="error">{t('error.loadingArticles')}: {error}</div>
+        <StateContainer>
+          <ErrorState
+            title={t('error.loadingArticles')}
+            message={error}
+            onRetry={() => dispatch(fetchArticles())}
+          />
+        </StateContainer>
       </div>
     )
   }
@@ -40,7 +52,9 @@ export const ArticleList = () => {
   if (articles.length === 0) {
     return (
       <div className="article-list-container">
-        <div className="empty">{t('empty.noArticles')}</div>
+        <StateContainer>
+          <EmptyState message={t('empty.noArticles')} icon="📭" />
+        </StateContainer>
       </div>
     )
   }
