@@ -7,13 +7,10 @@ const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY;
 const HUGGINGFACE_ROUTER_URL = 'https://router.huggingface.co/v1/chat/completions';
 
 /**
- * Available models in priority order (best to fallback)
- * Router API automatically handles load balancing and availability
+ * Default model for article generation
+ * Router API handles load balancing and failover for the specified model
  */
-const AI_MODELS = [
-  'Qwen/Qwen2.5-7B-Instruct',
-  'mistralai/Mistral-Nemo-12B-Instruct'
-];
+const DEFAULT_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
 
 /**
  * System prompt for AI article generation
@@ -41,12 +38,12 @@ Requirements:
 /**
  * Generate blog article using HuggingFace Router API
  *
- * Uses OpenAI-compatible chat completion format with automatic model fallback.
- * If no topic is provided, the AI chooses an interesting technology topic.
+ * The Router API provides load balancing and automatic failover for the
+ * specified model, ensuring high availability.
  *
  * @param {string|null} topic - Optional topic for the article. If null, AI chooses.
  * @returns {Promise<Object>} Article object with title, content, excerpt, and tags
- * @throws {Error} If all models fail to generate an article
+ * @throws {Error} If API call fails
  */
 export const generateArticle = async (topic = null) => {
   console.log('🤖 Starting AI article generation...');
@@ -54,34 +51,17 @@ export const generateArticle = async (topic = null) => {
 
   const userPrompt = buildUserPrompt(topic);
 
-  // Try each model in order until one succeeds
-  for (let i = 0; i < AI_MODELS.length; i++) {
-    const model = AI_MODELS[i];
-    const isLastModel = i === AI_MODELS.length - 1;
+  try {
+    const article = await callHuggingFaceRouter(userPrompt);
 
-    try {
-      console.log(`🔄 Attempting model: ${model}`);
+    console.log(`✅ Article generated successfully`);
+    console.log(`📄 Title: ${article.title}`);
 
-      const article = await callHuggingFaceRouter(model, userPrompt);
+    return article;
 
-      console.log(`✅ Article generated successfully using: ${model}`);
-      console.log(`📄 Title: ${article.title}`);
-
-      return article;
-
-    } catch (error) {
-      console.error(`❌ Model failed: ${model}`);
-      console.error(`   Error: ${error.message}`);
-
-      // If this was the last model, throw error
-      if (isLastModel) {
-        throw new Error(
-          'All AI models failed to generate article. Please try again later.'
-        );
-      }
-
-      console.log('⏭️  Trying next model...\n');
-    }
+  } catch (error) {
+    console.error(`❌ Failed to generate article: ${error.message}`);
+    throw new Error('AI service unavailable. Please try again later.');
   }
 };
 
@@ -99,17 +79,18 @@ function buildUserPrompt(topic) {
 }
 
 /**
- * Call HuggingFace Router API with specified model
- * @param {string} model - Model identifier
+ * Call HuggingFace Router API
+ * Router provides load balancing and failover for the model
+ *
  * @param {string} userPrompt - User message content
  * @returns {Promise<Object>} Parsed article data
  * @throws {Error} If API call fails or response is invalid
  */
-async function callHuggingFaceRouter(model, userPrompt) {
+async function callHuggingFaceRouter(userPrompt) {
   const response = await axios.post(
     HUGGINGFACE_ROUTER_URL,
     {
-      model,
+      model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
