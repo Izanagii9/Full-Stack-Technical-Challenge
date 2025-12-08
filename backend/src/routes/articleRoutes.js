@@ -1,10 +1,13 @@
 import express from 'express';
-import { getAllArticles, getArticleById, generateArticle } from '../controllers/articleController.js';
+import { getAllArticles, getArticleById, generateArticle, getGenerateInfo } from '../controllers/articleController.js';
 
 const router = express.Router();
 
 // GET /api/articles - Get all articles
 router.get('/', getAllArticles);
+
+// GET /api/articles/generate - Show documentation for generate endpoint
+router.get('/generate', getGenerateInfo);
 
 // POST /api/articles/generate - Generate new article with AI
 router.post('/generate', generateArticle);

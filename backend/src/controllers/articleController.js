@@ -11,9 +11,17 @@ export const getAllArticles = async (req, res, next) => {
     const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
 
     if (acceptsHtml) {
+      const info = {
+        endpoint: 'GET /api/articles',
+        description: 'Retrieve all articles',
+        method: 'GET',
+        parameters: 'None',
+        response: articles
+      };
+
       const html = renderTemplate('articles', {
         articlesCount: articles.length,
-        articlesHtml: JSON.stringify(articles, null, 2)
+        infoJson: JSON.stringify(info, null, 2)
       });
       res.send(html);
     } else {
@@ -34,13 +42,72 @@ export const getArticleById = async (req, res, next) => {
     const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
 
     if (acceptsHtml) {
+      const info = {
+        endpoint: `GET /api/articles/${id}`,
+        description: 'Retrieve a single article by ID',
+        method: 'GET',
+        parameters: {
+          id: 'number (required) - Article ID in URL path'
+        },
+        response: article
+      };
+
       const html = renderTemplate('article-detail', {
         id: article.id,
-        articleJson: JSON.stringify(article, null, 2)
+        infoJson: JSON.stringify(info, null, 2)
       });
       res.send(html);
     } else {
       res.json(article);
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get generate endpoint documentation
+export const getGenerateInfo = async (req, res, next) => {
+  try {
+    const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
+
+    const info = {
+      endpoint: 'POST /api/articles/generate',
+      description: 'Generate a new article using AI',
+      method: 'POST',
+      body: {
+        topic: 'string (optional) - Article topic. If not provided, a random topic will be used.'
+      },
+      example: {
+        request: {
+          method: 'POST',
+          url: '/api/articles/generate',
+          body: {
+            topic: 'The Future of Web Development'
+          }
+        },
+        response: {
+          success: true,
+          message: 'Article generated successfully',
+          article: {
+            id: 4,
+            title: 'The Future of Web Development',
+            excerpt: '...',
+            content: '...',
+            author: 'AI Assistant',
+            createdAt: '2025-01-01T00:00:00.000Z',
+            tags: ['technology', 'web development']
+          }
+        }
+      }
+    };
+
+    if (acceptsHtml) {
+      const html = renderTemplate('generate-info', {
+        infoJson: JSON.stringify(info, null, 2)
+      });
+      res.send(html);
+    } else {
+      res.json(info);
     }
   } catch (error) {
     next(error);
