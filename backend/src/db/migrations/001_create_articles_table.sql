@@ -12,5 +12,5 @@ CREATE TABLE IF NOT EXISTS articles (
 );
 
 -- Create index for faster queries
-CREATE INDEX idx_articles_created_at ON articles(created_at DESC);
-CREATE INDEX idx_articles_tags ON articles USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_tags ON articles USING GIN(tags);
