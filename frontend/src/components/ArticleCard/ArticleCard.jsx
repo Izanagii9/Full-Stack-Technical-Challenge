@@ -1,9 +1,20 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Article } from '../../models/Article'
 import './ArticleCard.css'
 
+/**
+ * @param {Object} props
+ * @param {Article} props.article - Article entity instance
+ */
 export const ArticleCard = ({ article }) => {
   const { t, i18n } = useTranslation()
+
+  // Validate that we received an Article instance
+  if (!(article instanceof Article)) {
+    console.error('ArticleCard received invalid article object:', article)
+    throw new Error('ArticleCard expects an Article instance')
+  }
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)

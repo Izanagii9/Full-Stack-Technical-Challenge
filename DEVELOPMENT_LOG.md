@@ -10,10 +10,11 @@ This is a full-stack technical challenge to build an auto-generated blog with Re
 ### Current Architecture
 - **Frontend**: React 18.2.0 + Redux Toolkit + React Router + i18next (EN/PT) + Axios
 - **Backend**: Express.js + CORS + Template renderer for HTML views (English only - no i18n)
-- **Data Layer**: Mock data in `backend/src/services/articleService.js` (3 hardcoded articles)
+- **Database**: PostgreSQL 18.1 with `pg` connection pool
+- **Data Layer**: `backend/src/services/articleService.js` (database-backed operations)
 - **State**: Redux store with `articlesSlice`, async thunks for API calls
 - **Styling**: External CSS files, custom focus-visible for keyboard nav
-- **API**: `/api/articles` (list), `/api/articles/:id` (detail), `/health` (health check)
+- **API**: `/api/articles` (list), `/api/articles/:id` (detail), `/api/articles/generate` (POST), `/health` (health check)
 
 ### File Locations
 - Frontend components: `frontend/src/components/`
@@ -21,9 +22,11 @@ This is a full-stack technical challenge to build an auto-generated blog with Re
 - Frontend services: `frontend/src/services/articleService.js` (Axios wrapper)
 - Frontend store: `frontend/src/store/` (Redux slices)
 - Backend controllers: `backend/src/controllers/articleController.js`
-- Backend services: `backend/src/services/articleService.js` (mock data)
+- Backend services: `backend/src/services/articleService.js` (PostgreSQL operations)
 - Backend routes: `backend/src/routes/articleRoutes.js`
 - Backend views: `backend/views/*.html` (HTML templates for API docs)
+- Database config: `backend/src/config/database.js` (PostgreSQL pool)
+- Database migrations: `backend/src/db/migrations/` (SQL migration files)
 
 ### What Works
 - ✅ Full frontend-backend communication via REST API
@@ -32,13 +35,18 @@ This is a full-stack technical challenge to build an auto-generated blog with Re
 - ✅ Clean keyboard navigation with custom focus styles
 - ✅ Backend serves JSON to API clients, HTML docs to browsers
 - ✅ Service layer pattern for separation of concerns
+- ✅ PostgreSQL database integration with connection pooling
+- ✅ Database migrations and seeding scripts
+- ✅ Persistent article storage across server restarts
 
 ### Key Implementation Details
-- Mock data simulates async DB with 100ms delay
+- PostgreSQL with `pg` connection pool (max 20 connections)
 - Accept header detection for HTML vs JSON responses
 - StateContainer uses `flex: 1` to prevent layout jumping
 - Global focus-visible styles prevent excessive outline spacing
 - Template renderer uses `{{placeholder}}` replacement
+- Database field mapping: `created_at` (DB) → `createdAt` (API)
+- SQL migrations run via Node.js scripts
 
 ---
 
@@ -70,7 +78,7 @@ You have a fully functional blog application:
    - Smooth transitions between pages
    - Professional, clean design
 
-### Current Status: Phase 3 Complete ✅
+### Current Status: Phase 4 Complete ✅
 
 **What's Working:**
 - Frontend talks to backend ✅
@@ -80,18 +88,20 @@ You have a fully functional blog application:
 - **AI article generation** ✅
 - **POST /api/articles/generate endpoint** ✅
 - **Daily automated article creation (cron)** ✅
-- 4 articles in the system (3 original + 1 generated)
+- **PostgreSQL database integration** ✅
+- **Persistent article storage** ✅
+- Articles now survive server restarts!
 
-**What's Next: Phase 4 - PostgreSQL Database**
+**What's Next: Phase 5 - Docker Containerization**
 
-Currently, articles are stored in memory (they reset when server restarts). The next step is to:
-1. Install and configure PostgreSQL
-2. Create database schema for articles
-3. Migrate article service to use database
-4. Persist generated articles permanently
-5. Keep everything working as-is with better storage
+Your blog is now production-ready with a real database! Next steps:
+1. Create Dockerfiles for frontend and backend
+2. Set up docker-compose for local development
+3. Configure database connection for containerized environment
+4. Test everything works in containers
+5. Prepare for AWS deployment
 
-This will make your blog production-ready with permanent data storage!
+This will make your app portable and ready for cloud deployment!
 
 ---
 
@@ -192,16 +202,75 @@ POST /api/articles/generate  → Generate new article
 - ✅ `backend/.env.example` (MODIFIED)
 - ✅ `backend/package.json` (axios, node-cron added)
 
-### ⏳ Phase 4: PostgreSQL Database (PLANNED)
-**Goal**: Replace in-memory/JSON storage with PostgreSQL
+### ✅ Phase 4: PostgreSQL Database (COMPLETED)
+**Duration**: December 8, 2025
+**Goal**: Replace in-memory storage with PostgreSQL
 
-**Planned Steps**:
-1. Set up PostgreSQL locally
-2. Create database schema (articles table)
-3. Add `pg` npm package
-4. Update `articleService.js` to use PostgreSQL
-5. Migrate existing articles to database
-6. Test frontend still works with DB
+**What Was Built**:
+- Database Setup:
+  - Created `autoblog_db` PostgreSQL database
+  - Installed `pg` npm package for Node.js
+  - Connection pool configuration with environment variables
+
+- Database Schema (`001_create_articles_table.sql`):
+  - Articles table with columns: id, title, excerpt, content, author, created_at, tags
+  - SERIAL primary key for auto-incrementing IDs
+  - TEXT[] array type for tags
+  - Indexes on created_at and tags for performance
+
+- Migration System:
+  - SQL migration files in `backend/src/db/migrations/`
+  - Migration runner script (`migrate.js`)
+  - Database seeding script (`seed.js`)
+
+- Article Entity Model (`Article.js`):
+  - Created Article class with validation
+  - `fromDatabase()` - Converts DB rows to Article entities
+  - `toDb()` - Converts Article to database format for INSERT
+  - `toJSON()` - Converts to API response format
+  - `validate()` - Validates article data
+
+- Service Layer Update (`articleService.js`):
+  - Replaced in-memory array with PostgreSQL queries
+  - `getAllArticles()` - SELECT with ORDER BY created_at DESC
+  - `getArticleById()` - Parameterized query with $1 placeholder
+  - `createArticle()` - INSERT using `article.toDb()` method
+  - Field mapping: `created_at` (DB) to `createdAt` (API)
+
+- Environment Configuration:
+  - Added DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD to `.env`
+  - Updated `.env.example` with database variables
+
+**Files Created/Modified**:
+- ✅ `backend/src/models/Article.js` (NEW - Article entity with toDb() method)
+- ✅ `backend/src/config/database.js` (NEW - connection pool)
+- ✅ `backend/src/db/migrations/001_create_articles_table.sql` (NEW)
+- ✅ `backend/src/db/migrate.js` (NEW - migration runner)
+- ✅ `backend/src/db/seed.js` (MODIFIED - AI-generated seed articles)
+- ✅ `backend/src/services/articleService.js` (MODIFIED - PostgreSQL queries with toDb())
+- ✅ `backend/.env` (MODIFIED - database credentials)
+- ✅ `backend/.env.example` (MODIFIED - database variables)
+- ✅ `backend/package.json` (pg added)
+
+**Database Schema**:
+```sql
+CREATE TABLE articles (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  excerpt TEXT NOT NULL,
+  content TEXT NOT NULL,
+  author VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  tags TEXT[] DEFAULT '{}'
+);
+```
+
+**Key Achievements**:
+- ✅ Articles now persist across server restarts
+- ✅ Production-ready data layer with entity pattern
+- ✅ All existing functionality maintained
+- ✅ Clean database serialization with `toDb()` method
+- ✅ All articles generated by AI (no hardcoded seed data)
 
 ### ⏳ Phase 5: Docker Containerization (PLANNED)
 **Goal**: Containerize frontend and backend
