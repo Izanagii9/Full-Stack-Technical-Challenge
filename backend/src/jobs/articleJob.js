@@ -1,6 +1,5 @@
 import cron from 'node-cron';
 import { articleService } from '../services/articleService.js';
-import { getRandomTopic } from '../services/aiService.js';
 
 /**
  * Schedule automatic article generation
@@ -15,10 +14,8 @@ export const startArticleGeneration = () => {
     console.log('Running scheduled article generation...');
 
     try {
-      const topic = getRandomTopic();
-      console.log(`Generating daily article about: ${topic}`);
-
-      const newArticle = await articleService.createArticle(topic);
+      // Let AI choose the topic
+      const newArticle = await articleService.createArticle();
 
       console.log(`✓ Daily article generated successfully: ${newArticle.title}`);
     } catch (error) {
@@ -41,10 +38,8 @@ export const startArticleGenerationTest = () => {
     console.log('Running TEST article generation (every minute)...');
 
     try {
-      const topic = getRandomTopic();
-      console.log(`Generating test article about: ${topic}`);
-
-      const newArticle = await articleService.createArticle(topic);
+      // Let AI choose the topic
+      const newArticle = await articleService.createArticle();
 
       console.log(`✓ Test article generated: ${newArticle.title}`);
     } catch (error) {
