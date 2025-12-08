@@ -1,4 +1,4 @@
-import { renderTemplate } from '../utils/templateRenderer.js';
+import { renderTemplate } from '../lib/templateRenderer.js';
 
 // Global error handling middleware
 export const errorHandler = (err, req, res, next) => {

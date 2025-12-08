@@ -16,4 +16,4 @@ npm-debug.log*
 Thumbs.db
 
 # Cache files
-src/cache/models.json
+src/lib/cache/models.json

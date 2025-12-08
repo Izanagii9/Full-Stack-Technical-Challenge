@@ -1,5 +1,5 @@
 import { articleService } from '../services/articleService.js';
-import { renderTemplate } from '../utils/templateRenderer.js';
+import { renderTemplate } from '../lib/templateRenderer.js';
 
 // Get all articles
 export const getAllArticles = async (req, res, next) => {
