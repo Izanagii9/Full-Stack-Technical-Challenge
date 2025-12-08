@@ -29,15 +29,22 @@
     </div>
 
     <h2>Available Endpoints</h2>
-    <div class="endpoint">
+    <div class="endpoint clickable">
       <span class="method">GET</span>
       <a href="/api/articles">/api/articles</a>
       <span> - List all articles</span>
     </div>
-    <div class="endpoint">
+    <div class="endpoint clickable">
       <span class="method">GET</span>
       <a href="/api/articles/1">/api/articles/:id</a>
       <span> - Get article by ID</span>
+    </div>
+
+    <h2>Admin Actions</h2>
+    <div class="endpoint admin clickable">
+      <span class="method post">POST</span>
+      <a href="/api/articles/generate" class="path">/api/articles/generate</a>
+      <span> - Generate new article with AI</span>
     </div>
   </div>
 </body>
