@@ -1,94 +1,191 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
-import { articleTopics } from '../config/topics.js';
 
 dotenv.config();
 
 const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY;
+const HUGGINGFACE_ROUTER_URL = 'https://router.huggingface.co/v1/chat/completions';
 
 /**
- * Generate blog article using HuggingFace API
- * @param {string} topic - The topic for the article
- * @returns {Promise<Object>} Generated article with title, content, excerpt, and tags
+ * Available models in priority order (best to fallback)
+ * Router API automatically handles load balancing and availability
  */
-export const generateArticle = async (topic) => {
-  // For now, generate mock AI content since HuggingFace API has changed
-  // TODO: Update to use new HuggingFace Router API or alternative
-  console.log(`Generating article about: ${topic}`);
+const AI_MODELS = [
+  'Qwen/Qwen2.5-7B-Instruct',
+  'mistralai/Mistral-Nemo-12B-Instruct'
+];
 
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
+/**
+ * System prompt for AI article generation
+ * Instructs the model to return structured JSON with article data
+ */
+const SYSTEM_PROMPT = `You are an expert technology writer.
 
-  const title = topic;
-  const content = generateMockContent(topic);
-  const excerpt = content.substring(0, 150).trim() + '...';
-  const tags = generateTags(topic);
+Respond ONLY with valid JSON in this exact structure:
+{
+  "title": "Article title",
+  "content": "Full article content with paragraphs separated by \\n\\n",
+  "excerpt": "Brief 2-3 sentence summary",
+  "tags": ["tag1", "tag2", "tag3"]
+}
 
-  return {
-    title,
-    content,
-    excerpt,
-    tags
-  };
+Requirements:
+- Content must be at least 4 well-written paragraphs
+- Separate paragraphs with double newlines (\\n\\n)
+- Excerpt should summarize the main points in 2-3 sentences
+- Include 3-5 relevant tags
+- Use professional, engaging writing style
+- No markdown formatting, code blocks, or extra explanations
+- Return ONLY the JSON object`;
+
+/**
+ * Generate blog article using HuggingFace Router API
+ *
+ * Uses OpenAI-compatible chat completion format with automatic model fallback.
+ * If no topic is provided, the AI chooses an interesting technology topic.
+ *
+ * @param {string|null} topic - Optional topic for the article. If null, AI chooses.
+ * @returns {Promise<Object>} Article object with title, content, excerpt, and tags
+ * @throws {Error} If all models fail to generate an article
+ */
+export const generateArticle = async (topic = null) => {
+  console.log('🤖 Starting AI article generation...');
+  console.log(`📝 Topic: ${topic || '(AI will choose)'}`);
+
+  const userPrompt = buildUserPrompt(topic);
+
+  // Try each model in order until one succeeds
+  for (let i = 0; i < AI_MODELS.length; i++) {
+    const model = AI_MODELS[i];
+    const isLastModel = i === AI_MODELS.length - 1;
+
+    try {
+      console.log(`🔄 Attempting model: ${model}`);
+
+      const article = await callHuggingFaceRouter(model, userPrompt);
+
+      console.log(`✅ Article generated successfully using: ${model}`);
+      console.log(`📄 Title: ${article.title}`);
+
+      return article;
+
+    } catch (error) {
+      console.error(`❌ Model failed: ${model}`);
+      console.error(`   Error: ${error.message}`);
+
+      // If this was the last model, throw error
+      if (isLastModel) {
+        throw new Error(
+          'All AI models failed to generate article. Please try again later.'
+        );
+      }
+
+      console.log('⏭️  Trying next model...\n');
+    }
+  }
 };
 
 /**
- * Generate mock content for article (placeholder until real AI integration)
- * @param {string} topic - Article topic
- * @returns {string} Generated content
+ * Build user prompt based on whether topic is provided
+ * @param {string|null} topic - Optional article topic
+ * @returns {string} Formatted user prompt
  */
-function generateMockContent(topic) {
-  const templates = [
-    `${topic} represents a significant advancement in modern technology. As we continue to push the boundaries of innovation, understanding these concepts becomes increasingly important for developers and technology professionals.
-
-The landscape of technology is constantly evolving, and staying ahead requires continuous learning and adaptation. This article explores the key aspects of ${topic} and how they impact our daily work and future developments.
-
-By examining current trends and best practices, we can better prepare for the challenges and opportunities that lie ahead. The integration of new methodologies and tools continues to reshape how we approach problem-solving in the tech industry.
-
-Looking forward, ${topic} will play a crucial role in shaping the next generation of technological solutions. Embracing these changes while maintaining a solid foundation in core principles ensures sustainable growth and innovation.`,
-
-    `In today's rapidly changing technological landscape, ${topic} has emerged as a critical area of focus. Organizations and individuals alike are recognizing the importance of understanding and implementing these concepts effectively.
-
-The evolution of ${topic} reflects broader shifts in how we approach technology and innovation. From theoretical foundations to practical applications, the journey has been marked by continuous improvement and learning.
-
-Modern implementations of ${topic} demonstrate the power of combining traditional methodologies with cutting-edge approaches. This balance enables teams to deliver robust solutions while remaining agile and responsive to change.
-
-As we move forward, the principles underlying ${topic} will continue to guide technological advancement. Success in this domain requires not just technical expertise, but also a commitment to ongoing learning and adaptation.`
-  ];
-
-  return templates[Math.floor(Math.random() * templates.length)];
-}
-
-/**
- * Generate relevant tags based on topic
- * @param {string} topic - Article topic
- * @returns {Array<string>} Array of tags
- */
-function generateTags(topic) {
-  const topicLower = topic.toLowerCase();
-  const tags = [];
-
-  // Technology-related tags
-  if (topicLower.includes('ai') || topicLower.includes('artificial intelligence')) {
-    tags.push('AI', 'Technology', 'Machine Learning');
-  } else if (topicLower.includes('web') || topicLower.includes('frontend') || topicLower.includes('backend')) {
-    tags.push('Web Development', 'Programming', 'Technology');
-  } else if (topicLower.includes('cloud') || topicLower.includes('aws') || topicLower.includes('docker')) {
-    tags.push('Cloud', 'DevOps', 'Infrastructure');
-  } else if (topicLower.includes('data') || topicLower.includes('database')) {
-    tags.push('Data Science', 'Database', 'Technology');
-  } else {
-    // Default tags
-    tags.push('Technology', 'Innovation', 'Trends');
+function buildUserPrompt(topic) {
+  if (topic) {
+    return `Write a comprehensive blog article about: ${topic}`;
   }
 
-  return tags;
+  return `Choose an interesting and current technology topic, then write a comprehensive blog article about it. The title should reflect your chosen topic.`;
 }
 
 /**
- * Get a random topic for article generation
- * @returns {string} Random topic
+ * Call HuggingFace Router API with specified model
+ * @param {string} model - Model identifier
+ * @param {string} userPrompt - User message content
+ * @returns {Promise<Object>} Parsed article data
+ * @throws {Error} If API call fails or response is invalid
  */
-export const getRandomTopic = () => {
-  return articleTopics[Math.floor(Math.random() * articleTopics.length)];
-};
+async function callHuggingFaceRouter(model, userPrompt) {
+  const response = await axios.post(
+    HUGGINGFACE_ROUTER_URL,
+    {
+      model,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt }
+      ],
+      max_tokens: 2000,
+      temperature: 0.8
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000 // 30 second timeout
+    }
+  );
+
+  const aiText = response.data.choices[0].message.content;
+
+  // Parse and validate the JSON response
+  const article = parseArticleResponse(aiText);
+
+  return article;
+}
+
+/**
+ * Parse and validate AI response
+ * @param {string} aiText - Raw AI response text
+ * @returns {Object} Validated article object
+ * @throws {Error} If JSON is invalid or missing required fields
+ */
+function parseArticleResponse(aiText) {
+  // Try to parse JSON response
+  const article = JSON.parse(aiText);
+
+  // Validate required fields
+  if (!article.title || !article.content || !article.excerpt || !article.tags) {
+    throw new Error('AI response missing required fields');
+  }
+
+  // Ensure content has proper paragraph formatting
+  article.content = formatParagraphs(article.content);
+
+  // Ensure tags is an array
+  if (!Array.isArray(article.tags)) {
+    article.tags = [article.tags];
+  }
+
+  return article;
+}
+
+/**
+ * Format article content with proper paragraph breaks
+ * @param {string} content - Article content
+ * @returns {string} Formatted content with paragraph breaks
+ */
+function formatParagraphs(content) {
+  // If already has paragraph breaks, return as-is
+  if (content.includes('\n\n')) {
+    return content.trim();
+  }
+
+  // Split by periods and group into paragraphs
+  const sentences = content.match(/[^.!?]+[.!?]+/g) || [content];
+  const paragraphs = [];
+
+  // Group sentences into paragraphs (approximately 3-4 sentences each)
+  for (let i = 0; i < sentences.length; i += 3) {
+    const paragraph = sentences
+      .slice(i, i + 3)
+      .join(' ')
+      .trim();
+
+    if (paragraph) {
+      paragraphs.push(paragraph);
+    }
+  }
+
+  return paragraphs.join('\n\n');
+}
