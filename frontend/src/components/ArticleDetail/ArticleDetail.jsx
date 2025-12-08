@@ -9,6 +9,7 @@ import {
   selectArticlesError,
   clearSelectedArticle
 } from '../../store/slices/articlesSlice'
+import { Article } from '../../models/Article'
 import { LoadingState } from '../LoadingState/LoadingState'
 import { ErrorState } from '../ErrorState/ErrorState'
 import { EmptyState } from '../EmptyState/EmptyState'
@@ -20,6 +21,7 @@ export const ArticleDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
+  /** @type {Article|null} */
   const article = useSelector(selectSelectedArticle)
   const loading = useSelector(selectArticlesLoading)
   const error = useSelector(selectArticlesError)
@@ -91,6 +93,12 @@ export const ArticleDetail = () => {
         </StateContainer>
       </div>
     )
+  }
+
+  // Validate that we received an Article instance
+  if (!(article instanceof Article)) {
+    console.error('ArticleDetail received invalid article object:', article)
+    throw new Error('ArticleDetail expects an Article instance')
   }
 
   return (
