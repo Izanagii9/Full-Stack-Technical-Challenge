@@ -8,12 +8,19 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
   },
-  "keywords": ["blog", "api", "express", "ai"],
+  "keywords": [
+    "blog",
+    "api",
+    "express",
+    "ai"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
+    "axios": "^1.13.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-cron": "^4.2.1"
   }
 }

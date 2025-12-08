@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate Article API</title>
+  <link rel="stylesheet" href="/css/api.css">
+</head>
+<body>
+  <div class="container">
+    <p><a href="/health">← Back to API Health</a></p>
+
+    <h1>POST /api/articles/generate</h1>
+    <p>Generate a new article using AI</p>
+
+    <h2>Test the Endpoint</h2>
+    <div class="test-form">
+      <label for="topic">Article Topic (optional):</label>
+      <input type="text" id="topic" placeholder="Enter a topic or leave empty for random">
+      <button id="generateBtn">Generate Article</button>
+
+      <div id="loading" style="display: none;">
+        <p>Generating article...</p>
+      </div>
+
+      <div id="result" style="display: none;">
+        <h3>Response:</h3>
+        <pre id="responseData"></pre>
+      </div>
+    </div>
+
+    <h2>API Documentation</h2>
+    <pre>{{infoJson}}</pre>
+
+    <h2>How to Use</h2>
+    <p>Send a POST request to this endpoint with an optional topic in the request body.</p>
+
+    <h3>Using curl:</h3>
+    <pre>curl -X POST http://localhost:3001/api/articles/generate \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "Your Topic Here"}'</pre>
+
+    <h3>Using fetch (JavaScript):</h3>
+    <pre>fetch('http://localhost:3001/api/articles/generate', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    topic: 'Your Topic Here'
+  })
+})
+.then(res => res.json())
+.then(data => console.log(data));</pre>
+  </div>
+
+  <script>
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+      const topic = document.getElementById('topic').value;
+      const loading = document.getElementById('loading');
+      const result = document.getElementById('result');
+      const responseData = document.getElementById('responseData');
+
+      loading.style.display = 'block';
+      result.style.display = 'none';
+
+      try {
+        const body = topic ? JSON.stringify({ topic }) : '{}';
+        const response = await fetch('/api/articles/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: body
+        });
+
+        const data = await response.json();
+        responseData.textContent = JSON.stringify(data, null, 2);
+        result.style.display = 'block';
+      } catch (error) {
+        responseData.textContent = 'Error: ' + error.message;
+        result.style.display = 'block';
+      } finally {
+        loading.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

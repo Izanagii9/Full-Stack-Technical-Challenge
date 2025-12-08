@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error {{status}} - API</title>
+  <link rel="stylesheet" href="/css/api.css">
+</head>
+<body>
+  <div class="container">
+    <p><a href="/health">← Back to API Health</a></p>
+
+    <h1>Error {{status}}</h1>
+    <p class="error-message">{{message}}</p>
+
+    <h2>What happened?</h2>
+    <pre>{{errorJson}}</pre>
+
+    <h2>Common Solutions</h2>
+    <ul>
+      <li>Check if the resource exists</li>
+      <li>Verify the URL is correct</li>
+      <li>Ensure you're using the correct HTTP method</li>
+      <li>Review the API documentation at <a href="/health">/health</a></li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -59,14 +59,35 @@ a:hover {
   border-left: 3px solid #4ec9b0;
 }
 
-.endpoint:hover {
+.endpoint.clickable:hover {
   background: #3e3e42;
+  cursor: pointer;
+}
+
+.endpoint.admin {
+  border-left: 3px solid #ce9178;
 }
 
 .method {
   color: #4ec9b0;
   font-weight: bold;
   margin-right: 10px;
+}
+
+.method.post {
+  color: #ce9178;
+}
+
+.endpoint .path {
+  color: #d4d4d4;
+}
+
+.endpoint.admin a.path {
+  color: #ce9178;
+}
+
+.endpoint.admin a.path:hover {
+  text-decoration: underline;
 }
 
 .info-item {
@@ -77,4 +98,93 @@ a:hover {
   color: #9cdcfe;
   display: inline-block;
   width: 120px;
+}
+
+.error-message {
+  color: #f48771;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+ul {
+  color: #d4d4d4;
+  line-height: 2;
+}
+
+ul li {
+  margin: 5px 0;
+}
+
+code {
+  background: #2d2d30;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #ce9178;
+}
+
+.test-form {
+  background: #2d2d30;
+  padding: 20px;
+  border-radius: 4px;
+  border-left: 3px solid #4ec9b0;
+  margin: 20px 0;
+}
+
+.test-form label {
+  display: block;
+  color: #9cdcfe;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.test-form input {
+  width: 100%;
+  padding: 10px;
+  background: #1e1e1e;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  color: #d4d4d4;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 15px;
+}
+
+.test-form input:focus {
+  outline: none;
+  border-color: #4ec9b0;
+}
+
+.test-form button {
+  background: #4ec9b0;
+  color: #1e1e1e;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  transition: background 0.2s;
+}
+
+.test-form button:hover {
+  background: #5fd4bf;
+}
+
+.test-form button:active {
+  background: #3ea88f;
+}
+
+#loading {
+  color: #569cd6;
+  margin-top: 15px;
+  font-style: italic;
+}
+
+#result {
+  margin-top: 15px;
+}
+
+#result h3 {
+  color: #4ec9b0;
+  font-size: 16px;
+  margin-bottom: 10px;
 }

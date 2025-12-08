@@ -5,17 +5,18 @@ import articleRoutes from './routes/articleRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { renderTemplate } from './utils/templateRenderer.js';
+import { startArticleGeneration } from './jobs/articleJob.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Middleware
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: '*', // Allow all origins in development
   credentials: true
 }));
 app.use(express.json());
@@ -61,8 +62,12 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 CORS enabled for: ${FRONTEND_URL}`);
+  console.log(`🌐 CORS enabled for all origins`);
+  console.log(`📱 Access from network: http://<your-ip>:${PORT}`);
+
+  // Start automated article generation (daily at midnight)
+  startArticleGeneration();
 });

@@ -1,5 +1,7 @@
-// Mock articles data - will be replaced with AI-generated content and database in later phases
-const mockArticles = [
+import { generateArticle } from './aiService.js';
+
+// Articles storage - will be replaced with database in Phase 4
+let articles = [
   {
     id: 1,
     title: 'The Future of Artificial Intelligence in 2025',
@@ -47,7 +49,7 @@ export const articleService = {
   getAllArticles: async () => {
     // Simulate database delay
     await new Promise(resolve => setTimeout(resolve, 100));
-    return mockArticles;
+    return articles;
   },
 
   // Get article by ID
@@ -55,12 +57,39 @@ export const articleService = {
     // Simulate database delay
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    const article = mockArticles.find(article => article.id === parseInt(id));
+    const article = articles.find(article => article.id === parseInt(id));
 
     if (!article) {
       throw new Error('Article not found');
     }
 
     return article;
+  },
+
+  // Create new AI-generated article
+  createArticle: async (topic) => {
+    // Generate article using AI
+    const aiContent = await generateArticle(topic);
+
+    // Get next ID
+    const nextId = articles.length > 0
+      ? Math.max(...articles.map(a => a.id)) + 1
+      : 1;
+
+    // Create new article object
+    const newArticle = {
+      id: nextId,
+      title: aiContent.title,
+      excerpt: aiContent.excerpt,
+      content: aiContent.content,
+      author: 'AI Assistant',
+      createdAt: new Date().toISOString(),
+      tags: aiContent.tags
+    };
+
+    // Add to articles array
+    articles.unshift(newArticle); // Add to beginning so newest appears first
+
+    return newArticle;
   }
 };
