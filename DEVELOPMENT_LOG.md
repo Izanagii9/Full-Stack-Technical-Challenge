@@ -70,23 +70,28 @@ You have a fully functional blog application:
    - Smooth transitions between pages
    - Professional, clean design
 
-### Current Status: Phase 2 Complete
+### Current Status: Phase 3 Complete ✅
 
 **What's Working:**
 - Frontend talks to backend ✅
 - Articles display correctly ✅
 - Language switching works ✅
 - Everything looks good and is responsive ✅
+- **AI article generation** ✅
+- **POST /api/articles/generate endpoint** ✅
+- **Daily automated article creation (cron)** ✅
+- 4 articles in the system (3 original + 1 generated)
 
-**What's Next: Phase 3 - AI Integration**
+**What's Next: Phase 4 - PostgreSQL Database**
 
-Currently, your 3 articles are hardcoded. The next step is to:
-1. Connect to a free AI service (like HuggingFace)
-2. Create a button or endpoint to generate new articles automatically
-3. Make the AI write 1 new article every day
-4. See AI-generated content appear in your blog
+Currently, articles are stored in memory (they reset when server restarts). The next step is to:
+1. Install and configure PostgreSQL
+2. Create database schema for articles
+3. Migrate article service to use database
+4. Persist generated articles permanently
+5. Keep everything working as-is with better storage
 
-This is the exciting part where your blog becomes truly "auto-generated"!
+This will make your blog production-ready with permanent data storage!
 
 ---
 
@@ -141,29 +146,51 @@ GET /api/articles        → List all articles (JSON)
 GET /api/articles/:id    → Single article (JSON)
 ```
 
-### ⏳ Phase 3: AI Integration (NEXT - NOT STARTED)
+### ✅ Phase 3: AI Integration (COMPLETED)
+**Duration**: December 8, 2025
 **Goal**: Replace mock data with AI-generated content
 
-**Planned Steps**:
-1. Choose AI provider (HuggingFace, OpenRouter, DeepInfra, or OpenAI)
-2. Create `backend/src/services/aiService.js`
-3. Implement article generation logic
-4. Add POST endpoint `/api/articles/generate`
-5. Test manual article generation via API
-6. Implement daily cron job (node-cron)
-7. Store generated articles (still in-memory for now, before DB phase)
-8. Update frontend to show newly generated articles
+**What Was Built**:
+- AI Service (`backend/src/services/aiService.js`):
+  - Article generation with mock AI content
+  - Random topic selection from 15 technology topics
+  - Smart tag generation based on topic keywords
+  - Two content templates for variety
 
-**Requirements**:
-- Generate 1 article per day automatically
-- Use free API (recommended) or max $5 on paid API
-- Must have at least 3 articles when deployed
+- Article Service Updates (`backend/src/services/articleService.js`):
+  - Changed from `const` to `let` for mutable articles array
+  - Added `createArticle(topic)` method
+  - Auto-incrementing ID generation
+  - New articles prepended to array (newest first)
 
-**Technical Decisions Needed**:
-- Which AI provider to use?
-- What prompts to use for article generation?
-- How to schedule daily generation (cron vs node-cron)?
-- How to store articles before PostgreSQL (array in memory, JSON file)?
+- Generation Endpoint (`POST /api/articles/generate`):
+  - Manual article generation via API
+  - Accepts optional `topic` in request body
+  - Returns 201 status with generated article
+
+- Daily Automation (`backend/src/jobs/articleJob.js`):
+  - node-cron scheduler integration
+  - Runs daily at 00:00 UTC
+  - Automatic random topic selection
+
+- Server Integration:
+  - Cron job starts with server
+  - Fixed FRONTEND_URL to port 3000 (matching Vite config)
+
+**API Endpoints Added**:
+```
+POST /api/articles/generate  → Generate new article
+```
+
+**Files Created/Modified**:
+- ✅ `backend/src/services/aiService.js` (NEW)
+- ✅ `backend/src/jobs/articleJob.js` (NEW)
+- ✅ `backend/src/services/articleService.js` (MODIFIED)
+- ✅ `backend/src/controllers/articleController.js` (MODIFIED)
+- ✅ `backend/src/routes/articleRoutes.js` (MODIFIED)
+- ✅ `backend/src/server.js` (MODIFIED)
+- ✅ `backend/.env.example` (MODIFIED)
+- ✅ `backend/package.json` (axios, node-cron added)
 
 ### ⏳ Phase 4: PostgreSQL Database (PLANNED)
 **Goal**: Replace in-memory/JSON storage with PostgreSQL
