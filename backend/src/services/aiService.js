@@ -5,12 +5,19 @@ dotenv.config();
 
 const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY;
 const HUGGINGFACE_ROUTER_URL = 'https://router.huggingface.co/v1/chat/completions';
+const HUGGINGFACE_HUB_API = 'https://huggingface.co/api/models';
 
 /**
- * Default model for article generation
- * Router API handles load balancing and failover for the specified model
+ * Fallback models in priority order (if dynamic fetch fails)
+ * Based on HuggingFace Hub download stats and Instruct-tuned capabilities
  */
-const DEFAULT_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
+const FALLBACK_MODELS = [
+  'Qwen/Qwen2.5-7B-Instruct',
+  'Qwen/Qwen2.5-3B-Instruct',
+  'meta-llama/Llama-3.1-8B-Instruct',
+  'Qwen/Qwen2.5-1.5B-Instruct',
+  'mistralai/Mistral-Nemo-12B-Instruct'
+];
 
 /**
  * System prompt for AI article generation
@@ -36,14 +43,47 @@ Requirements:
 - Return ONLY the JSON object`;
 
 /**
+ * Fetch popular chat/text-generation models from HuggingFace Hub API
+ * @returns {Promise<string[]>} Array of model IDs
+ */
+async function fetchAvailableModels() {
+  try {
+    const response = await axios.get(HUGGINGFACE_HUB_API, {
+      params: {
+        pipeline_tag: 'text-generation',
+        sort: 'downloads',
+        limit: 10,
+        filter: 'conversational'
+      },
+      timeout: 5000
+    });
+
+    // Extract model IDs and filter for Instruct-tuned models
+    const models = response.data
+      .filter(model => model.id.includes('Instruct'))
+      .map(model => model.id);
+
+    console.log(`📥 Fetched ${models.length} available models from Hub`);
+    return models.length > 0 ? models : FALLBACK_MODELS;
+
+  } catch (error) {
+    console.warn(`⚠️  Failed to fetch models from Hub: ${error.message}`);
+    console.warn('📋 Using fallback model list');
+    return FALLBACK_MODELS;
+  }
+}
+
+/**
  * Generate blog article using HuggingFace Router API
  *
- * The Router API provides load balancing and automatic failover for the
- * specified model, ensuring high availability.
+ * Automatically tries multiple models with fallback:
+ * 1. Fetches popular models from HuggingFace Hub API
+ * 2. Falls back through models if one fails
+ * 3. Uses hardcoded fallback list if Hub API fails
  *
  * @param {string|null} topic - Optional topic for the article. If null, AI chooses.
  * @returns {Promise<Object>} Article object with title, content, excerpt, and tags
- * @throws {Error} If API call fails
+ * @throws {Error} If all models fail
  */
 export const generateArticle = async (topic = null) => {
   console.log('🤖 Starting AI article generation...');
@@ -51,17 +91,37 @@ export const generateArticle = async (topic = null) => {
 
   const userPrompt = buildUserPrompt(topic);
 
-  try {
-    const article = await callHuggingFaceRouter(userPrompt);
+  // Fetch available models (with fallback to hardcoded list)
+  const models = await fetchAvailableModels();
 
-    console.log(`✅ Article generated successfully`);
-    console.log(`📄 Title: ${article.title}`);
+  // Try each model in order until one succeeds
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+    const isLastModel = i === models.length - 1;
 
-    return article;
+    try {
+      console.log(`🔄 Attempting model: ${model}`);
 
-  } catch (error) {
-    console.error(`❌ Failed to generate article: ${error.message}`);
-    throw new Error('AI service unavailable. Please try again later.');
+      const article = await callHuggingFaceRouter(model, userPrompt);
+
+      console.log(`✅ Article generated successfully using: ${model}`);
+      console.log(`📄 Title: ${article.title}`);
+
+      return article;
+
+    } catch (error) {
+      console.error(`❌ Model failed: ${model}`);
+      console.error(`   Error: ${error.message}`);
+
+      // If this was the last model, throw error
+      if (isLastModel) {
+        throw new Error(
+          'All AI models failed to generate article. Please try again later.'
+        );
+      }
+
+      console.log('⏭️  Trying next model...\n');
+    }
   }
 };
 
@@ -79,18 +139,17 @@ function buildUserPrompt(topic) {
 }
 
 /**
- * Call HuggingFace Router API
- * Router provides load balancing and failover for the model
- *
+ * Call HuggingFace Router API with specified model
+ * @param {string} model - Model identifier
  * @param {string} userPrompt - User message content
  * @returns {Promise<Object>} Parsed article data
  * @throws {Error} If API call fails or response is invalid
  */
-async function callHuggingFaceRouter(userPrompt) {
+async function callHuggingFaceRouter(model, userPrompt) {
   const response = await axios.post(
     HUGGINGFACE_ROUTER_URL,
     {
-      model: DEFAULT_MODEL,
+      model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt }
