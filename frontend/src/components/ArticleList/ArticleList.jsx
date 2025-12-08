@@ -69,7 +69,8 @@ export const ArticleList = () => {
       <div className="article-list-header">
         <h1 className="article-list-title">{t('article.latestArticles')}</h1>
         <button className="refresh-button" onClick={handleRefresh} title={t('article.refresh')}>
-          🔄
+          <span className="icon">🔄</span>
+          {t('article.refresh')}
         </button>
       </div>
       <div className="article-list">
