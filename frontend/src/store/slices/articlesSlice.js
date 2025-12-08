@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { articleService } from '../../services/articleService'
+import { Article } from '../../models/Article'
 
 const initialState = {
   articles: [],
@@ -8,13 +9,14 @@ const initialState = {
   error: null,
 }
 
-// Async thunks for API calls (will be used later when backend is ready)
+// Async thunks for API calls
 export const fetchArticles = createAsyncThunk(
   'articles/fetchArticles',
   async (_, { rejectWithValue }) => {
     try {
       const data = await articleService.getAll()
-      return data
+      // Convert API response to Article entities
+      return data.map(article => Article.fromAPI(article))
     } catch (error) {
       return rejectWithValue(error.message)
     }
@@ -26,7 +28,8 @@ export const fetchArticleById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const data = await articleService.getById(id)
-      return data
+      // Convert API response to Article entity
+      return Article.fromAPI(data)
     } catch (error) {
       return rejectWithValue(error.message)
     }
