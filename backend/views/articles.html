@@ -8,11 +8,24 @@
 </head>
 <body>
   <div class="container">
-    <h1>GET /api/articles</h1>
-    <p><a href="/health">← Back to Health Check</a></p>
+    <p><a href="/health">← Back to API Health</a></p>
 
-    <h2>Response ({{articlesCount}} articles)</h2>
-    <pre>{{articlesHtml}}</pre>
+    <h1>GET /api/articles</h1>
+    <p>Retrieve all articles from the blog</p>
+
+    <h2>API Documentation</h2>
+    <pre>{{infoJson}}</pre>
+
+    <h2>How to Use</h2>
+    <p>This endpoint returns a list of all articles. Simply make a GET request.</p>
+
+    <h3>Using curl:</h3>
+    <pre>curl http://localhost:3001/api/articles</pre>
+
+    <h3>Using fetch (JavaScript):</h3>
+    <pre>fetch('http://localhost:3001/api/articles')
+  .then(res => res.json())
+  .then(data => console.log(data));</pre>
   </div>
 </body>
 </html>

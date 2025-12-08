@@ -8,11 +8,24 @@
 </head>
 <body>
   <div class="container">
-    <h1>GET /api/articles/{{id}}</h1>
-    <p><a href="/health">← Back to Health Check</a></p>
+    <p><a href="/health">← Back to API Health</a> | <a href="/api/articles">View All Articles</a></p>
 
-    <h2>Response</h2>
-    <pre>{{articleJson}}</pre>
+    <h1>GET /api/articles/:id</h1>
+    <p>Retrieve a specific article by its ID</p>
+
+    <h2>API Documentation</h2>
+    <pre>{{infoJson}}</pre>
+
+    <h2>How to Use</h2>
+    <p>Replace <code>:id</code> with the article ID you want to retrieve.</p>
+
+    <h3>Using curl:</h3>
+    <pre>curl http://localhost:3001/api/articles/{{id}}</pre>
+
+    <h3>Using fetch (JavaScript):</h3>
+    <pre>fetch('http://localhost:3001/api/articles/{{id}}')
+  .then(res => res.json())
+  .then(data => console.log(data));</pre>
   </div>
 </body>
 </html>
