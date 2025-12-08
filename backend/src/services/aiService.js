@@ -1,5 +1,14 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import {
+  loadCache,
+  isCacheStale,
+  updateCacheWithFreshModels,
+  recordSuccess,
+  recordFailure,
+  getSortedModels,
+  cleanupPoorPerformers
+} from '../cache/modelCache.js';
 
 dotenv.config();
 
@@ -8,7 +17,7 @@ const HUGGINGFACE_ROUTER_URL = 'https://router.huggingface.co/v1/chat/completion
 const HUGGINGFACE_HUB_API = 'https://huggingface.co/api/models';
 
 /**
- * Fallback models in priority order (if dynamic fetch fails)
+ * Fallback models in priority order (if cache and fetch both fail)
  * Based on HuggingFace Hub download stats and Instruct-tuned capabilities
  */
 const FALLBACK_MODELS = [
@@ -46,13 +55,13 @@ Requirements:
  * Fetch popular chat/text-generation models from HuggingFace Hub API
  * @returns {Promise<string[]>} Array of model IDs
  */
-async function fetchAvailableModels() {
+async function fetchFreshModels() {
   try {
     const response = await axios.get(HUGGINGFACE_HUB_API, {
       params: {
         pipeline_tag: 'text-generation',
         sort: 'downloads',
-        limit: 10,
+        limit: 15,
         filter: 'conversational'
       },
       timeout: 5000
@@ -68,18 +77,52 @@ async function fetchAvailableModels() {
 
   } catch (error) {
     console.warn(`⚠️  Failed to fetch models from Hub: ${error.message}`);
-    console.warn('📋 Using fallback model list');
-    return FALLBACK_MODELS;
+    return [];
   }
+}
+
+/**
+ * Get models to use for generation (with intelligent caching)
+ * @returns {Promise<string[]>} Array of model IDs sorted by performance
+ */
+async function getModelsToTry() {
+  const cache = loadCache();
+
+  // Check if we should refresh the cache
+  if (isCacheStale(cache) || cache.models.length === 0) {
+    console.log('🔄 Cache is stale or empty, fetching fresh models...');
+
+    const freshModels = await fetchFreshModels();
+
+    if (freshModels.length > 0) {
+      updateCacheWithFreshModels(freshModels);
+      // Clean up poor performers after update
+      cleanupPoorPerformers();
+    }
+  }
+
+  // Get models sorted by score (best performers first)
+  let models = getSortedModels();
+
+  // If cache is empty, use fallback
+  if (models.length === 0) {
+    console.warn('📋 No cached models, using fallback list');
+    models = FALLBACK_MODELS;
+  }
+
+  console.log(`🎯 Using ${models.length} models (top: ${models[0]})`);
+  return models;
 }
 
 /**
  * Generate blog article using HuggingFace Router API
  *
- * Automatically tries multiple models with fallback:
- * 1. Fetches popular models from HuggingFace Hub API
- * 2. Falls back through models if one fails
- * 3. Uses hardcoded fallback list if Hub API fails
+ * Intelligent model selection with adaptive learning:
+ * 1. Uses cached models sorted by performance score
+ * 2. Refreshes cache from Hub API when stale (24h)
+ * 3. Records successes and failures for each model
+ * 4. Automatically removes consistently failing models
+ * 5. Falls back to hardcoded list if all else fails
  *
  * @param {string|null} topic - Optional topic for the article. If null, AI chooses.
  * @returns {Promise<Object>} Article object with title, content, excerpt, and tags
@@ -91,8 +134,8 @@ export const generateArticle = async (topic = null) => {
 
   const userPrompt = buildUserPrompt(topic);
 
-  // Fetch available models (with fallback to hardcoded list)
-  const models = await fetchAvailableModels();
+  // Get models with intelligent caching and scoring
+  const models = await getModelsToTry();
 
   // Try each model in order until one succeeds
   for (let i = 0; i < models.length; i++) {
@@ -100,9 +143,12 @@ export const generateArticle = async (topic = null) => {
     const isLastModel = i === models.length - 1;
 
     try {
-      console.log(`🔄 Attempting model: ${model}`);
+      console.log(`🔄 Attempting model: ${model} (${i + 1}/${models.length})`);
 
       const article = await callHuggingFaceRouter(model, userPrompt);
+
+      // Record success for adaptive learning
+      recordSuccess(model);
 
       console.log(`✅ Article generated successfully using: ${model}`);
       console.log(`📄 Title: ${article.title}`);
@@ -112,6 +158,9 @@ export const generateArticle = async (topic = null) => {
     } catch (error) {
       console.error(`❌ Model failed: ${model}`);
       console.error(`   Error: ${error.message}`);
+
+      // Record failure for adaptive learning
+      recordFailure(model);
 
       // If this was the last model, throw error
       if (isLastModel) {
