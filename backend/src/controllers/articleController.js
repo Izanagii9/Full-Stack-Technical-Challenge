@@ -1,5 +1,6 @@
 import { articleService } from '../services/articleService.js';
 import { renderTemplate } from '../utils/templateRenderer.js';
+import { getRandomTopic } from '../services/aiService.js';
 
 // Get all articles
 export const getAllArticles = async (req, res, next) => {
@@ -42,6 +43,31 @@ export const getArticleById = async (req, res, next) => {
       res.json(article);
     }
   } catch (error) {
+    next(error);
+  }
+};
+
+// Generate new article with AI
+export const generateArticle = async (req, res, next) => {
+  try {
+    // Get topic from request body or use random topic
+    const topic = req.body?.topic || getRandomTopic();
+
+    console.log(`Generating article about: ${topic}`);
+
+    // Create article using AI
+    const newArticle = await articleService.createArticle(topic);
+
+    console.log(`Article generated successfully: ${newArticle.title}`);
+
+    // Return the newly created article
+    res.status(201).json({
+      success: true,
+      message: 'Article generated successfully',
+      article: newArticle
+    });
+  } catch (error) {
+    console.error('Error generating article:', error.message);
     next(error);
   }
 };
