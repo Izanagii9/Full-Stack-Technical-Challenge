@@ -1,6 +1,5 @@
 import { articleService } from '../services/articleService.js';
 import { renderTemplate } from '../utils/templateRenderer.js';
-import { getRandomTopic } from '../services/aiService.js';
 
 // Get all articles
 export const getAllArticles = async (req, res, next) => {
@@ -72,10 +71,10 @@ export const getGenerateInfo = async (req, res, next) => {
 
     const info = {
       endpoint: 'POST /api/articles/generate',
-      description: 'Generate a new article using AI',
+      description: 'Generate a new article using AI. Topic is optional - AI will choose an interesting technology topic if not provided.',
       method: 'POST',
       body: {
-        topic: 'string (optional) - Article topic. If not provided, a random topic will be used.'
+        topic: 'string (optional) - Article topic. If omitted, AI chooses a random technology topic.'
       },
       example: {
         request: {
@@ -117,10 +116,8 @@ export const getGenerateInfo = async (req, res, next) => {
 // Generate new article with AI
 export const generateArticle = async (req, res, next) => {
   try {
-    // Get topic from request body or use random topic
-    const topic = req.body?.topic || getRandomTopic();
-
-    console.log(`Generating article about: ${topic}`);
+    // Get topic from request body (optional - AI chooses if not provided)
+    const topic = req.body?.topic || null;
 
     // Create article using AI
     const newArticle = await articleService.createArticle(topic);
