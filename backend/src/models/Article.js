@@ -55,6 +55,23 @@ export class Article {
   }
 
   /**
+   * Convert Article entity to database format for INSERT operations
+   * @returns {Object} Object with values array and fields for SQL query
+   */
+  toDb() {
+    return {
+      values: [
+        this.title,
+        this.excerpt,
+        this.content,
+        this.author,
+        this.tags
+      ],
+      fields: ['title', 'excerpt', 'content', 'author', 'tags']
+    };
+  }
+
+  /**
    * Convert Article entity to JSON-safe object for API response
    * @returns {Object}
    */

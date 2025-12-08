@@ -48,18 +48,13 @@ export const articleService = {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
     }
 
-    // Insert article into database
+    // Insert article into database using toDb() method
+    const dbData = article.toDb();
     const result = await pool.query(
-      `INSERT INTO articles (title, excerpt, content, author, tags)
+      `INSERT INTO articles (${dbData.fields.join(', ')})
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [
-        article.title,
-        article.excerpt,
-        article.content,
-        article.author,
-        article.tags
-      ]
+      dbData.values
     );
 
     // Convert database row to Article entity
