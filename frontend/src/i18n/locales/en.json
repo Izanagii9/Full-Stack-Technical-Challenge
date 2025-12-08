@@ -11,7 +11,8 @@
     "backToArticles": "Back to Articles",
     "by": "By",
     "readMore": "Read More",
-    "notFound": "Article not found."
+    "notFound": "Article not found.",
+    "refresh": "Refresh articles"
   },
   "loading": {
     "articles": "Loading articles...",
