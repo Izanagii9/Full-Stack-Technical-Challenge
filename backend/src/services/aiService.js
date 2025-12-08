@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { articleTopics } from '../config/topics.js';
 
 dotenv.config();
 
@@ -89,23 +90,5 @@ function generateTags(topic) {
  * @returns {string} Random topic
  */
 export const getRandomTopic = () => {
-  const topics = [
-    'The Future of Web Development in 2025',
-    'Cloud Computing and Serverless Architecture',
-    'Machine Learning Applications in Business',
-    'Cybersecurity Best Practices for Developers',
-    'The Evolution of JavaScript Frameworks',
-    'Microservices Architecture Patterns',
-    'GraphQL vs REST API Design',
-    'Container Orchestration with Kubernetes',
-    'Progressive Web Applications',
-    'Database Design and Optimization',
-    'Functional Programming Concepts',
-    'Test-Driven Development Strategies',
-    'CI/CD Pipeline Automation',
-    'Mobile App Development Trends',
-    'Blockchain Technology Applications'
-  ];
-
-  return topics[Math.floor(Math.random() * topics.length)];
+  return articleTopics[Math.floor(Math.random() * articleTopics.length)];
 };
