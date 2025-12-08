@@ -5,7 +5,7 @@ import articleRoutes from './routes/articleRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { renderTemplate } from './lib/templateRenderer.js';
-import { startArticleGenerationTest } from './jobs/articleJob.js';
+import { startArticleGeneration } from './jobs/articleJob.js';
 
 // Load environment variables
 dotenv.config();
@@ -69,5 +69,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`📱 Access from network: http://<your-ip>:${PORT}`);
 
   // Start automated article generation (daily at midnight)
-  startArticleGenerationTest();
+  startArticleGeneration();
 });

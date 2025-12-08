@@ -148,44 +148,52 @@ GET /api/articles/:id    → Single article (JSON)
 
 ### ✅ Phase 3: AI Integration (COMPLETED)
 **Duration**: December 8, 2025
-**Goal**: Replace mock data with AI-generated content
+**Goal**: Real AI-powered article generation using HuggingFace
 
 **What Was Built**:
-- AI Service (`backend/src/services/aiService.js`):
-  - Article generation with mock AI content
-  - Random topic selection from 15 technology topics
-  - Smart tag generation based on topic keywords
-  - Two content templates for variety
 
-- Article Service Updates (`backend/src/services/articleService.js`):
-  - Changed from `const` to `let` for mutable articles array
-  - Added `createArticle(topic)` method
-  - Auto-incrementing ID generation
-  - New articles prepended to array (newest first)
+**HuggingFace Router API Integration**:
+- Integrated with HuggingFace Router API (`https://router.huggingface.co/v1/chat/completions`)
+- Real AI models generate articles with title, content, excerpt, and tags
+- Production-grade error handling with automatic model failover
+- AI chooses topics automatically (no hardcoded list)
 
-- Generation Endpoint (`POST /api/articles/generate`):
-  - Manual article generation via API
-  - Accepts optional `topic` in request body
-  - Returns 201 status with generated article
+**Adaptive Model Caching System** 🧠:
+- Persistent JSON cache tracks model performance (`backend/src/lib/cache/modelCache.js`)
+- Score system: +0.1 for success, -0.2 for failure (0.0-1.0 scale)
+- Models sorted by performance score (best models tried first)
+- Auto-removes models after 3 consecutive failures
+- Score decay for models not used recently
+- Dynamic model discovery from HuggingFace Hub API (refreshes every 24 hours)
 
-- Daily Automation (`backend/src/jobs/articleJob.js`):
-  - node-cron scheduler integration
-  - Runs daily at 00:00 UTC
-  - Automatic random topic selection
+**Clean Code Architecture**:
+- `backend/src/ai/promptBuilder.js` - Prompt construction
+- `backend/src/ai/responseParser.js` - JSON validation
+- `backend/src/ai/modelDiscovery.js` - Model fetching and cache refresh
+- `backend/src/ai/huggingfaceClient.js` - HTTP client for Router API
+- `backend/src/lib/textFormatter.js` - Text utilities
+- `backend/src/lib/cache/modelCache.js` - Adaptive learning cache
+- `backend/src/services/aiService.js` - Orchestration layer (70 lines)
 
-- Server Integration:
-  - Cron job starts with server
-  - Fixed FRONTEND_URL to port 3000 (matching Vite config)
+**Daily Automation**:
+- node-cron scheduler runs daily at 00:00 UTC (production mode)
+- Automatic article generation with AI-selected topics
+- Articles stored in-memory (persist during session)
 
 **API Endpoints Added**:
 ```
-POST /api/articles/generate  → Generate new article
+POST /api/articles/generate  → Generate new article (optional topic parameter)
 ```
 
 **Files Created/Modified**:
-- ✅ `backend/src/services/aiService.js` (NEW)
-- ✅ `backend/src/jobs/articleJob.js` (NEW)
-- ✅ `backend/src/services/articleService.js` (MODIFIED)
+- ✅ `backend/src/ai/promptBuilder.js` (NEW)
+- ✅ `backend/src/ai/responseParser.js` (NEW)
+- ✅ `backend/src/ai/modelDiscovery.js` (NEW)
+- ✅ `backend/src/ai/huggingfaceClient.js` (NEW)
+- ✅ `backend/src/lib/textFormatter.js` (NEW)
+- ✅ `backend/src/lib/cache/modelCache.js` (NEW)
+- ✅ `backend/src/services/aiService.js` (REFACTORED)
+- ✅ `backend/src/jobs/articleJob.js` (MODIFIED)
 - ✅ `backend/src/controllers/articleController.js` (MODIFIED)
 - ✅ `backend/src/routes/articleRoutes.js` (MODIFIED)
 - ✅ `backend/src/server.js` (MODIFIED)
