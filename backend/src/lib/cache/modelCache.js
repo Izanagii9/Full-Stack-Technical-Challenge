@@ -6,9 +6,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const CACHE_FILE = path.join(__dirname, 'models.json');
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days
 const MAX_FAILURES = 3; // Remove model after 3 consecutive failures
-const SCORE_DECAY = 0.9; // Decay factor for success score
+const SCORE_DECAY = 0.95; // Decay factor for success score (slightly reduced)
 
 /**
  * Model cache structure:
@@ -169,12 +169,12 @@ export function recordFailure(modelId) {
 export function getSortedModels() {
   const cache = loadCache();
 
-  // Apply score decay over time (models that haven't been used recently get lower scores)
+  // Apply score decay over time (models that haven't been used in 30 days get lower scores)
   const now = Date.now();
-  const oneDayAgo = now - CACHE_DURATION;
+  const thirtyDaysAgo = now - CACHE_DURATION;
 
   cache.models.forEach(model => {
-    if (model.lastSuccess && model.lastSuccess < oneDayAgo) {
+    if (model.lastSuccess && model.lastSuccess < thirtyDaysAgo) {
       model.score *= SCORE_DECAY;
     }
   });
