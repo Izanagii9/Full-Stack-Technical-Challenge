@@ -29,7 +29,7 @@ export class Article {
     this.content = data.content;
     /** @type {string} */
     this.author = data.author;
-    /** @type {string} */
+    /** @type {string|Date} */
     this.createdAt = data.createdAt || data.created_at;
     /** @type {string[]} */
     this.tags = data.tags || [];
