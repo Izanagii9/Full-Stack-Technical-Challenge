@@ -8,10 +8,13 @@ A modern full-stack blog application with AI-powered content generation, built w
 - **Backend**: Node.js + Express REST API (English only)
 - **Responsive Design**: Mobile, tablet, and desktop support
 - **Clean Architecture**: Service layer pattern with separation of concerns
-- **AI Integration**: Ready for AI-generated content (Phase 3)
-- **Database**: PostgreSQL ready (Phase 4)
-- **Containerization**: Docker support (Phase 5)
-- **Cloud Deployment**: AWS EC2 + CodeBuild + ECR (Phase 6)
+- **AI Integration**: HuggingFace Router API with adaptive model caching ✅
+- **Smart Model Selection**: Performance-based caching with automatic failover
+- **Database**: PostgreSQL with entity pattern and migrations ✅
+- **Auto-retry**: 5-minute retry mechanism for failed generations
+- **Monitoring**: Model performance dashboard at `/cache-stats`
+- **Containerization**: Docker support (Phase 5 - Planned)
+- **Cloud Deployment**: AWS EC2 + CodeBuild + ECR (Phase 6 - Planned)
 
 ## 📁 Project Structure
 
@@ -90,10 +93,12 @@ The backend will run on **http://localhost:3001**
 
 - `GET /api/articles` - Get all articles
 - `GET /api/articles/:id` - Get single article by ID
+- `POST /api/articles/generate` - Generate new AI article (optional: `{"topic": "your topic"}`)
 
-### Health
+### Monitoring
 
 - `GET /health` - Server health status
+- `GET /cache-stats` - Model performance dashboard (HTML/JSON)
 
 ## 🎨 Frontend Features
 
@@ -117,6 +122,9 @@ The backend will run on **http://localhost:3001**
 
 ### Backend
 - Express 4.18.2
+- PostgreSQL 8.16.3 (pg driver)
+- Axios 1.13.2 (HuggingFace API)
+- node-cron 4.2.1 (Daily scheduling)
 - CORS 2.8.5
 - Dotenv 16.3.1
 
@@ -130,24 +138,42 @@ VITE_API_URL=http://localhost:3001/api
 ### Backend (.env)
 ```
 PORT=3001
-NODE_ENV=development
+NODE_ENV=production
 FRONTEND_URL=http://localhost:3000
+
+# PostgreSQL Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=autoblog_db
+DB_USER=postgres
+DB_PASSWORD=your_password
+
+# HuggingFace Router API
+HUGGINGFACE_API_URL=https://router.huggingface.co/v1/chat/completions
 ```
 
 ## 🚧 Development Phases
 
 - ✅ **Phase 1**: React frontend with Redux and i18n
 - ✅ **Phase 2**: Node.js backend with REST API
-- ⏳ **Phase 3**: AI integration for content generation
-- ⏳ **Phase 4**: PostgreSQL database
+- ✅ **Phase 3**: AI integration with HuggingFace Router API
+- ✅ **Phase 4**: PostgreSQL database with migrations
+- ✅ **Phase 4.5**: AI model caching & retry mechanism
 - ⏳ **Phase 5**: Docker containerization
 - ⏳ **Phase 6**: AWS deployment (EC2, CodeBuild, ECR)
 
 ## 🎯 Current State
 
-The application is currently using **mock data** in the backend. The frontend successfully communicates with the backend API via REST endpoints.
+The application uses **real AI-generated content** from HuggingFace models with intelligent caching and automatic failover. Articles are stored in **PostgreSQL** and persist across restarts.
 
-**Next steps**: Integrate AI for automatic article generation.
+**Key Features Implemented**:
+- Adaptive model selection based on performance
+- 5-minute auto-retry for failed generations
+- Daily automated article creation (00:00 UTC)
+- Model performance dashboard
+- Production-ready error handling
+
+**Next steps**: Docker containerization for cloud deployment.
 
 ## 📦 Scripts
 
@@ -159,6 +185,8 @@ The application is currently using **mock data** in the backend. The frontend su
 ### Backend
 - `npm run dev` - Start with auto-reload (--watch)
 - `npm start` - Start production server
+- `npm run migrate` - Run database migrations
+- `npm run seed` - Seed database with initial AI articles
 
 ## 🤝 Contributing
 
