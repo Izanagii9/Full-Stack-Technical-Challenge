@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { renderTemplate } from './lib/templateRenderer.js';
 import { startArticleGeneration } from './jobs/articleJob.js';
+import { getCacheStats as getCacheStatsController } from './controllers/cacheController.js';
 
 // Load environment variables
 dotenv.config();
@@ -56,6 +57,9 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/articles', articleRoutes);
+
+// Cache stats endpoint
+app.get('/cache-stats', getCacheStatsController);
 
 // Error handling (must be after routes)
 app.use(notFoundHandler);
