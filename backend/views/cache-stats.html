@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<!-- @ts-nocheck -->
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Model Cache Dashboard</title>
+  <link rel="stylesheet" href="/css/api.css">
+  <style>
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin: 20px 0;
+    }
+
+    .stat-card {
+      background: #2d2d30;
+      padding: 15px;
+      border-radius: 4px;
+      border-left: 3px solid #569cd6;
+    }
+
+    .stat-card .label {
+      font-size: 0.875rem;
+      color: #9cdcfe;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #4ec9b0;
+    }
+
+    .model-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: #2d2d30;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .model-table th,
+    .model-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #3e3e42;
+    }
+
+    .model-table th {
+      background: #252526;
+      font-weight: 600;
+      color: #569cd6;
+    }
+
+    .model-table tr:hover {
+      background: #3e3e42;
+    }
+
+    .model-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .score-bar {
+      display: inline-block;
+      height: 18px;
+      background: linear-gradient(90deg, #569cd6, #4ec9b0);
+      border-radius: 3px;
+      min-width: 20px;
+    }
+
+    .score-low {
+      background: linear-gradient(90deg, #ce9178, #d7ba7d);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-success {
+      background: #2d4a2e;
+      color: #4ec9b0;
+    }
+
+    .badge-warning {
+      background: #4a3d2a;
+      color: #d7ba7d;
+    }
+
+    .badge-danger {
+      background: #4a2d2e;
+      color: #f48771;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>🧠 AI Model Cache Dashboard</h1>
+    <p>Performance metrics and statistics for adaptive model caching system</p>
+
+    <h2>Cache Overview</h2>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="label">Total Models</div>
+        <div class="value">{{totalModels}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Cache Age</div>
+        <div class="value">{{cacheAge}} days</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Last Refreshed</div>
+        <div class="value" style="font-size: 0.875rem;">{{lastFetch}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Cache Status</div>
+        <div class="value">
+          <span class="badge {{staleClass}}">{{staleText}}</span>
+        </div>
+      </div>
+    </div>
+
+    <h2>Top Performing Models</h2>
+    <table class="model-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Model ID</th>
+          <th>Score</th>
+          <th>Performance Bar</th>
+          <th>Successes</th>
+          <th>Failures</th>
+        </tr>
+      </thead>
+      <tbody id="model-tbody">
+      </tbody>
+    </table>
+
+    <h2>Cache Details (JSON)</h2>
+    <pre><code>{{topModelsJson}}</code></pre>
+
+    <h2>Navigation</h2>
+    <div class="endpoint clickable">
+      <span class="method">GET</span>
+      <a href="/health">/health</a>
+      <span> - API health check</span>
+    </div>
+    <div class="endpoint clickable">
+      <span class="method">GET</span>
+      <a href="/api/articles">/api/articles</a>
+      <span> - List all articles</span>
+    </div>
+    <div class="endpoint clickable">
+      <span class="method">POST</span>
+      <a href="/api/articles/generate">/api/articles/generate</a>
+      <span> - Generate new article</span>
+    </div>
+  </div>
+
+  <script>
+    const topModels = {{topModelsJsArray}};
+    const tbody = document.getElementById('model-tbody');
+
+    topModels.forEach((model, index) => {
+      const score = parseFloat(model.score);
+      const scorePercent = score * 100;
+      const scoreClass = score < 0.5 ? 'score-low' : '';
+
+      const row = `
+        <tr>
+          <td><strong>${index + 1}</strong></td>
+          <td style="font-family: monospace; font-size: 0.875rem;">${model.id}</td>
+          <td><strong>${model.score}</strong></td>
+          <td>
+            <span class="score-bar ${scoreClass}" style="width: ${scorePercent}px;"></span>
+          </td>
+          <td><span class="badge badge-success">${model.successCount}</span></td>
+          <td><span class="badge badge-danger">${model.failureCount}</span></td>
+        </tr>
+      `;
+      tbody.innerHTML += row;
+    });
+  </script>
+</body>
+
+</html>
