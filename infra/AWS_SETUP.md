@@ -100,6 +100,22 @@ aws iam attach-role-policy \
 aws iam attach-role-policy \
     --role-name AutoblogCodeBuildRole \
     --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+# SSM permissions (for EC2 deployment)
+aws iam attach-role-policy \
+    --role-name AutoblogCodeBuildRole \
+    --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+```
+
+### 2.4 Update EC2 Role for SSM
+
+The EC2 instance needs SSM permissions for CodeBuild to deploy to it:
+
+```bash
+# Attach SSM policy to EC2 role
+aws iam attach-role-policy \
+    --role-name AutoblogEC2Role \
+    --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 ```
 
 ## Step 3: Create CodeBuild Project
@@ -118,7 +134,7 @@ Your `infra/buildspec.yml` is already configured and ready to use:
 3. **Source**:
    - Provider: GitHub
    - Repository: Connect to your GitHub repo
-   - Source version: `main`
+   - Source version: `release-0.1` (or your main branch)
    - Webhook: ❌ **UNCHECK** "Rebuild every time a code change is pushed" (manual builds only to save free tier)
 4. **Environment**:
    - Environment image: Managed image
@@ -126,11 +142,14 @@ Your `infra/buildspec.yml` is already configured and ready to use:
    - Runtime: Standard
    - Image: `aws/codebuild/amazonlinux-x86_64-standard:5.0`
    - Image version: Always use the latest image
-   - Service role: New service role
-   - Role name: `codebuild-autoblog-build-service-role`
+   - Service role: Existing service role
+   - Role ARN: Select `AutoblogCodeBuildRole`
    - **Additional configuration** (expand this section):
      - Privileged: ✅ **ENABLE** (required for Docker)
      - Compute: 3 GB memory, 2 vCPUs
+     - **Environment variables** (CRITICAL - Add these):
+       - Name: `VITE_API_URL`, Value: `http://YOUR_EC2_PUBLIC_IP:3001/api`, Type: Plaintext
+       - Name: `EC2_INSTANCE_ID`, Value: `i-xxxxxxxxxxxxx` (your EC2 instance ID), Type: Plaintext
 5. **Buildspec**:
    - Use a buildspec file
    - Buildspec name: `infra/buildspec.yml`
@@ -141,24 +160,80 @@ Your `infra/buildspec.yml` is already configured and ready to use:
    - Group name: `/aws/codebuild/autoblog-build` (default)
 8. Create build project
 
+**⚠️ CRITICAL:** The environment variables are required for deployment:
+- `VITE_API_URL`: Frontend will be built with this API URL (must point to your EC2 instance)
+- `EC2_INSTANCE_ID`: CodeBuild needs this to deploy via SSM to your EC2 instance
+
 ### 3.3 Or Create via AWS CLI
 
-Replace `YOUR_USERNAME`, `YOUR_REPO`, and `YOUR_ACCOUNT_ID` with your values:
+Replace placeholders with your actual values:
 
 ```bash
 aws codebuild create-project \
     --name autoblog-build \
-    --source type=GITHUB,location=https://github.com/YOUR_USERNAME/YOUR_REPO.git \
-    --artifacts type=NO_ARTIFACTS \
-    --environment type=LINUX_CONTAINER,image=aws/codebuild/amazonlinux-x86_64-standard:5.0,computeType=BUILD_GENERAL1_SMALL,privilegedMode=true \
-    --service-role arn:aws:iam::YOUR_ACCOUNT_ID:role/codebuild-autoblog-build-service-role \
+    --source '{
+        "type": "GITHUB",
+        "location": "https://github.com/YOUR_USERNAME/YOUR_REPO.git",
+        "buildspec": "infra/buildspec.yml"
+    }' \
+    --artifacts '{"type": "NO_ARTIFACTS"}' \
+    --environment '{
+        "type": "LINUX_CONTAINER",
+        "image": "aws/codebuild/amazonlinux-x86_64-standard:5.0",
+        "computeType": "BUILD_GENERAL1_SMALL",
+        "privilegedMode": true,
+        "environmentVariables": [
+            {
+                "name": "VITE_API_URL",
+                "value": "http://YOUR_EC2_PUBLIC_IP:3001/api",
+                "type": "PLAINTEXT"
+            },
+            {
+                "name": "EC2_INSTANCE_ID",
+                "value": "i-xxxxxxxxxxxxx",
+                "type": "PLAINTEXT"
+            }
+        ]
+    }' \
+    --service-role arn:aws:iam::YOUR_ACCOUNT_ID:role/AutoblogCodeBuildRole \
     --region us-east-1
 ```
 
-**Notes:**
-- Using `amazonlinux-x86_64-standard:5.0` (December 2025 latest) with Docker 26
-- AWS Account ID in buildspec is auto-detected, no manual configuration needed
-- The buildspec retrieves account ID via `aws sts get-caller-identity`
+**Important Notes:**
+- Replace `YOUR_USERNAME/YOUR_REPO` with your GitHub repository
+- Replace `YOUR_EC2_PUBLIC_IP` with your EC2 instance's public IP
+- Replace `i-xxxxxxxxxxxxx` with your EC2 instance ID
+- Replace `YOUR_ACCOUNT_ID` with your AWS account ID
+- Using `amazonlinux-x86_64-standard:5.0` (latest) with Docker 26
+- AWS Account ID in buildspec is auto-detected at build time
+
+### 3.4 Update Environment Variables (After Creating)
+
+If you need to update environment variables later (e.g., if EC2 IP changes):
+
+```bash
+aws codebuild update-project \
+    --name autoblog-build \
+    --environment '{
+        "type": "LINUX_CONTAINER",
+        "image": "aws/codebuild/amazonlinux-x86_64-standard:5.0",
+        "computeType": "BUILD_GENERAL1_SMALL",
+        "privilegedMode": true,
+        "environmentVariables": [
+            {
+                "name": "VITE_API_URL",
+                "value": "http://NEW_EC2_IP:3001/api",
+                "type": "PLAINTEXT"
+            },
+            {
+                "name": "EC2_INSTANCE_ID",
+                "value": "i-xxxxxxxxxxxxx",
+                "type": "PLAINTEXT"
+            }
+        ]
+    }' \
+    --region us-east-1
+```
 
 ## Step 4: Launch EC2 Instance
 
@@ -404,10 +479,73 @@ Add webhook to GitHub or use AWS CodePipeline for automatic deployments.
 
 ## Troubleshooting
 
+### CodeBuild: Missing Environment Variables
+
+**Error**: Frontend built with `localhost:3001` instead of EC2 IP
+
+**Solution**: Add environment variables to CodeBuild project:
+```bash
+aws codebuild update-project \
+    --name autoblog-build \
+    --environment '{
+        "type": "LINUX_CONTAINER",
+        "image": "aws/codebuild/amazonlinux-x86_64-standard:5.0",
+        "computeType": "BUILD_GENERAL1_SMALL",
+        "privilegedMode": true,
+        "environmentVariables": [
+            {
+                "name": "VITE_API_URL",
+                "value": "http://54.237.240.161:3001/api",
+                "type": "PLAINTEXT"
+            },
+            {
+                "name": "EC2_INSTANCE_ID",
+                "value": "i-0fcc7cfea1674063f",
+                "type": "PLAINTEXT"
+            }
+        ]
+    }' \
+    --region us-east-1
+```
+
+### CodeBuild: SSM Deployment Fails
+
+**Error**: `An error occurred (AccessDeniedException) when calling the SendCommand operation`
+
+**Solution**: Both CodeBuild and EC2 need SSM permissions:
+```bash
+# Add SSM to CodeBuild role
+aws iam attach-role-policy \
+    --role-name AutoblogCodeBuildRole \
+    --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+# Add SSM to EC2 role
+aws iam attach-role-policy \
+    --role-name AutoblogEC2Role \
+    --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+# Restart SSM agent on EC2
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+sudo systemctl restart amazon-ssm-agent
+```
+
+### CodeBuild: Backend Tag Doesn't Exist
+
+**Error**: `tag does not exist: 995554323651.dkr.ecr.us-east-1.amazonaws.com/autoblog-backend:61be3d8`
+
+**Solution**: This was a bug in buildspec.yml line 47 (already fixed in latest version). Update your code:
+```bash
+git pull origin release-0.1
+aws codebuild start-build --project-name autoblog-build --region us-east-1
+```
+
 ### Build Fails
 ```bash
 # Check CodeBuild logs
 aws logs tail /aws/codebuild/autoblog-build --follow
+
+# Get build details
+aws codebuild batch-get-builds --ids YOUR_BUILD_ID --region us-east-1
 ```
 
 ### ECR Login Fails
@@ -415,6 +553,17 @@ aws logs tail /aws/codebuild/autoblog-build --follow
 # Re-login to ECR
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
 ```
+
+### Frontend Shows Localhost API Error
+
+**Problem**: Frontend trying to connect to `http://localhost:3001/api`
+
+**Root Cause**: CodeBuild environment variable `VITE_API_URL` not set
+
+**Solution**:
+1. Update CodeBuild environment variables (see above)
+2. Rebuild: `aws codebuild start-build --project-name autoblog-build --region us-east-1`
+3. Verify in build logs: Look for `VITE_API_URL=http://YOUR_IP:3001/api`
 
 ### Container Fails to Start
 ```bash
@@ -433,6 +582,29 @@ docker-compose ps database
 
 # Check healthcheck
 docker inspect autoblog-db | grep -A 10 Health
+```
+
+### EC2 Not Showing in SSM
+
+**Problem**: CodeBuild can't deploy to EC2 via SSM
+
+**Solution**:
+```bash
+# SSH to EC2
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+
+# Install SSM agent (if not present)
+sudo yum install -y amazon-ssm-agent
+
+# Start SSM agent
+sudo systemctl enable amazon-ssm-agent
+sudo systemctl start amazon-ssm-agent
+
+# Check status
+sudo systemctl status amazon-ssm-agent
+
+# Verify instance appears in SSM (run on your local machine)
+aws ssm describe-instance-information --region us-east-1
 ```
 
 ## Cleanup (When Done)
