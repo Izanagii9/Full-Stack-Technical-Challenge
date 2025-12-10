@@ -295,7 +295,3 @@ docker-compose up -d
 ## 🤝 Contributing
 
 This is a technical challenge project. Feel free to explore and learn from the implementation.
-
-## 📄 License
-
-MIT
