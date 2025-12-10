@@ -104,11 +104,12 @@ aws iam attach-role-policy \
 
 ## Step 3: Create CodeBuild Project
 
-### 3.1 Update buildspec.yml
+### 3.1 Verify buildspec.yml
 
-Edit `infra/buildspec.yml` and replace:
-- `YOUR_AWS_ACCOUNT_ID` with your actual AWS account ID
-- `us-east-1` with your preferred region (if different)
+Your `infra/buildspec.yml` is already configured and ready to use:
+- ✅ AWS Account ID is auto-detected at runtime (no hardcoding needed)
+- ✅ Region defaults to `us-east-1` (change in buildspec if using different region)
+- ✅ No secrets required during build (loaded at runtime on EC2)
 
 ### 3.2 Create CodeBuild Project via Console
 
@@ -117,31 +118,47 @@ Edit `infra/buildspec.yml` and replace:
 3. **Source**:
    - Provider: GitHub
    - Repository: Connect to your GitHub repo
-   - Source version: `main` (or your branch)
+   - Source version: `main`
+   - Webhook: ❌ **UNCHECK** "Rebuild every time a code change is pushed" (manual builds only to save free tier)
 4. **Environment**:
    - Environment image: Managed image
-   - Operating system: Amazon Linux 2
+   - Operating system: Amazon Linux
    - Runtime: Standard
-   - Image: `aws/codebuild/standard:7.0`
-   - Privileged: ✅ **ENABLE** (required for Docker)
+   - Image: `aws/codebuild/amazonlinux-x86_64-standard:5.0`
+   - Image version: Always use the latest image
+   - Service role: New service role
+   - Role name: `codebuild-autoblog-build-service-role`
+   - **Additional configuration** (expand this section):
+     - Privileged: ✅ **ENABLE** (required for Docker)
+     - Compute: 3 GB memory, 2 vCPUs
 5. **Buildspec**:
    - Use a buildspec file
    - Buildspec name: `infra/buildspec.yml`
-6. **Service role**:
-   - Existing service role: `AutoblogCodeBuildRole`
-7. Create build project
+6. **Artifacts**:
+   - Type: No artifacts
+7. **Logs** (optional but recommended):
+   - CloudWatch logs: ✅ Enable
+   - Group name: `/aws/codebuild/autoblog-build` (default)
+8. Create build project
 
 ### 3.3 Or Create via AWS CLI
+
+Replace `YOUR_USERNAME`, `YOUR_REPO`, and `YOUR_ACCOUNT_ID` with your values:
 
 ```bash
 aws codebuild create-project \
     --name autoblog-build \
     --source type=GITHUB,location=https://github.com/YOUR_USERNAME/YOUR_REPO.git \
     --artifacts type=NO_ARTIFACTS \
-    --environment type=LINUX_CONTAINER,image=aws/codebuild/standard:7.0,computeType=BUILD_GENERAL1_SMALL,privilegedMode=true \
-    --service-role arn:aws:iam::YOUR_ACCOUNT_ID:role/AutoblogCodeBuildRole \
+    --environment type=LINUX_CONTAINER,image=aws/codebuild/amazonlinux-x86_64-standard:5.0,computeType=BUILD_GENERAL1_SMALL,privilegedMode=true \
+    --service-role arn:aws:iam::YOUR_ACCOUNT_ID:role/codebuild-autoblog-build-service-role \
     --region us-east-1
 ```
+
+**Notes:**
+- Using `amazonlinux-x86_64-standard:5.0` (December 2025 latest) with Docker 26
+- AWS Account ID in buildspec is auto-detected, no manual configuration needed
+- The buildspec retrieves account ID via `aws sts get-caller-identity`
 
 ## Step 4: Launch EC2 Instance
 
