@@ -70,5 +70,6 @@ phases:
           chmod +x infra/scripts/deploy-to-ec2.sh
           bash infra/scripts/deploy-to-ec2.sh
         else
+          echo "EC2_INSTANCE_ID=$EC2_INSTANCE_ID"
           echo "EC2_INSTANCE_ID not set, skipping deployment"
         fi
