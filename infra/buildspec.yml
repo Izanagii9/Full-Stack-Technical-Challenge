@@ -9,6 +9,8 @@ env:
     FRONTEND_REPO_NAME: "autoblog-frontend"
     BACKEND_REPO_NAME: "autoblog-backend"
     IMAGE_TAG: "latest"
+    # Configure this in CodeBuild project settings
+    # VITE_API_URL: "http://YOUR_EC2_IP:3001/api"
 
 phases:
   pre_build:
@@ -34,7 +36,7 @@ phases:
       # Build frontend
       - echo Building frontend image...
       - cd frontend
-      - docker build -t $FRONTEND_REPO_URI:latest .
+      - docker build --build-arg VITE_API_URL=${VITE_API_URL:-http://localhost:3001/api} -t $FRONTEND_REPO_URI:latest .
       - docker tag $FRONTEND_REPO_URI:latest $FRONTEND_REPO_URI:$IMAGE_TAG
       - cd ..
 
