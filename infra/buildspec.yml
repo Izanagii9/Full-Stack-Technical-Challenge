@@ -44,7 +44,7 @@ phases:
       - echo Building backend image...
       - cd backend
       - docker build -t $BACKEND_REPO_URI:latest .
-      - docker tag $FRONTEND_REPO_URI:latest $FRONTEND_REPO_URI:$IMAGE_TAG
+      - docker tag $BACKEND_REPO_URI:latest $BACKEND_REPO_URI:$IMAGE_TAG
       - cd ..
 
   post_build:
