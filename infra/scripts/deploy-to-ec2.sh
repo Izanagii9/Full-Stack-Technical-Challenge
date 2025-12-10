@@ -30,32 +30,17 @@ git reset --hard origin/release-0.1
 echo "Logging in to ECR..."
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 995554323651.dkr.ecr.us-east-1.amazonaws.com
 
-# Create override file if it doesn't exist
-if [ ! -f docker-compose.override.yml ]; then
-  echo "Creating docker-compose.override.yml..."
-  cat > docker-compose.override.yml << 'OVERRIDE_EOF'
-services:
-  backend:
-    image: 995554323651.dkr.ecr.us-east-1.amazonaws.com/autoblog-backend:latest
-    build: null
-
-  frontend:
-    image: 995554323651.dkr.ecr.us-east-1.amazonaws.com/autoblog-frontend:latest
-    build: null
-OVERRIDE_EOF
-fi
-
-# Pull latest images
+# Pull latest images using production compose file
 echo "Pulling latest Docker images from ECR..."
-docker-compose pull
+docker-compose -f docker-compose.prod.yml pull
 
 # Restart containers
 echo "Restarting containers with new images..."
-docker-compose up -d
+docker-compose -f docker-compose.prod.yml up -d
 
 # Show status
 echo "=== Container Status ==="
-docker-compose ps
+docker-compose -f docker-compose.prod.yml ps
 
 echo "=== Deployment completed successfully ==="
 EOF
