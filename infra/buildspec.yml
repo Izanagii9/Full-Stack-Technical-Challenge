@@ -36,6 +36,7 @@ phases:
       - echo Building frontend image...
       - cd frontend
       - docker build -t $FRONTEND_REPO_URI:latest .
+      - echo "VITE_API_URL=$VITE_API_URL"
       - docker tag $FRONTEND_REPO_URI:latest $FRONTEND_REPO_URI:$IMAGE_TAG
       - cd ..
 
