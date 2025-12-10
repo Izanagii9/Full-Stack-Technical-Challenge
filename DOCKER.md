@@ -6,10 +6,78 @@ This guide explains how to run the Auto-Generated Blog application using Docker 
 
 - Docker Desktop installed and running
 - Docker Compose (included with Docker Desktop)
+- **HuggingFace API Key** (required for AI article generation)
+
+## ⚠️ IMPORTANT: Configuration Before First Run
+
+### Get Your HuggingFace API Key
+
+**The application WILL NOT WORK without a valid HuggingFace API key.**
+
+1. Go to https://huggingface.co/settings/tokens
+2. Create a new token (read access is sufficient)
+3. Copy the token (starts with `hf_...`)
+
+### Configure docker-compose.yml
+
+Before running `docker-compose up`, you **MUST** edit `docker-compose.yml`:
+
+**Line 40: Add your HuggingFace API key**
+```yaml
+HUGGINGFACE_API_KEY: hf_YOUR_ACTUAL_KEY_HERE  # ⚠️ REPLACE THIS
+```
+
+**Lines 10-11: (Optional) Change database credentials**
+```yaml
+POSTGRES_USER: postgre           # Change if desired
+POSTGRES_PASSWORD: postgre       # ⚠️ Use a strong password
+```
+
+**Line 17: Update health check to match database user**
+```yaml
+test: ["CMD-SHELL", "pg_isready -U autoblog -d autoblog_db"]  # Must match POSTGRES_USER
+```
+
+**Lines 37-38: Update backend database credentials to match**
+```yaml
+DB_USER: postgre                 # Must match POSTGRES_USER above
+DB_PASSWORD: postgre             # Must match POSTGRES_PASSWORD above
+```
+
+### Example Configuration
+
+```yaml
+# Database service (lines 9-11)
+environment:
+  POSTGRES_DB: autoblog_db
+  POSTGRES_USER: myuser              # Your choice
+  POSTGRES_PASSWORD: MySecurePass123  # Strong password
+
+# Database healthcheck (line 17)
+healthcheck:
+  test: ["CMD-SHELL", "pg_isready -U myuser -d autoblog_db"]  # Must match POSTGRES_USER
+
+# Backend service (lines 37-40)
+environment:
+  DB_USER: myuser                     # Same as POSTGRES_USER
+  DB_PASSWORD: MySecurePass123         # Same as POSTGRES_PASSWORD
+  HUGGINGFACE_API_KEY: hf_abc123xyz   # Your actual key
+```
+
+**Important: All three places must match:**
+1. `POSTGRES_USER` (line 10)
+2. `pg_isready -U username` (line 17 in healthcheck)
+3. `DB_USER` (line 37)
 
 ## Quick Start
 
-### 1. Start All Services
+### 1. Configure (First Time Only)
+
+**Edit `docker-compose.yml` and set:**
+- `HUGGINGFACE_API_KEY` (line 40) - **REQUIRED**
+- Database credentials (optional, but recommended for production)
+
+### 2. Start All Services
 
 From the project root directory:
 
