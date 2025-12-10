@@ -107,27 +107,126 @@ aws iam attach-role-policy \
     --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 ```
 
-### 2.4 Update EC2 Role for SSM
+### 2.4 Update EC2 Role for SSM and Secrets Manager
 
-The EC2 instance needs SSM permissions for CodeBuild to deploy to it:
+The EC2 instance needs SSM permissions for CodeBuild to deploy to it, and Secrets Manager permissions to fetch secrets:
 
 ```bash
-# Attach SSM policy to EC2 role
+# Attach SSM policy to EC2 role (for deployment)
 aws iam attach-role-policy \
     --role-name AutoblogEC2Role \
     --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+# Attach Secrets Manager read policy to EC2 role (for fetching secrets)
+aws iam attach-role-policy \
+    --role-name AutoblogEC2Role \
+    --policy-arn arn:aws:iam::aws:policy/SecretsManagerReadWrite
 ```
 
-## Step 3: Create CodeBuild Project
+**Why these permissions?**
+- **SSM**: Allows CodeBuild to deploy to EC2 via AWS Systems Manager
+- **Secrets Manager**: Allows EC2 to fetch secrets (HuggingFace API key, database passwords) securely
 
-### 3.1 Verify buildspec.yml
+## Step 3: Create Secrets in AWS Secrets Manager
+
+### 3.1 Why Use Secrets Manager?
+
+Instead of manually creating a `.env` file on EC2 (which is insecure and error-prone), we store all secrets in **AWS Secrets Manager**. The deployment script automatically:
+1. Fetches secrets from Secrets Manager
+2. Converts them to `.env` format
+3. Creates the `.env` file on EC2
+
+**Benefits:**
+- ✅ Secrets never stored in Git
+- ✅ Centralized secret management
+- ✅ Automatic rotation support
+- ✅ Audit logging of secret access
+- ✅ No manual `.env` file creation needed
+
+### 3.2 Create the Secret
+
+Create a secret named `autoblog/production` with all required environment variables:
+
+```bash
+aws secretsmanager create-secret \
+    --name autoblog/production \
+    --description "Production secrets for Auto-Generated Blog" \
+    --secret-string '{
+        "HUGGINGFACE_API_KEY": "hf_YOUR_ACTUAL_KEY_HERE",
+        "POSTGRES_DB": "autoblog_db",
+        "POSTGRES_USER": "autoblog",
+        "POSTGRES_PASSWORD": "YOUR_SECURE_PASSWORD_123",
+        "DB_HOST": "database",
+        "DB_PORT": "5432",
+        "DB_NAME": "autoblog_db",
+        "DB_USER": "autoblog",
+        "DB_PASSWORD": "YOUR_SECURE_PASSWORD_123",
+        "PORT": "3001",
+        "NODE_ENV": "production",
+        "FRONTEND_URL": "http://YOUR_EC2_PUBLIC_IP",
+        "HUGGINGFACE_API_URL": "https://router.huggingface.co/v1/chat/completions"
+    }' \
+    --region us-east-1
+```
+
+**⚠️ IMPORTANT - Replace These Values:**
+- `hf_YOUR_ACTUAL_KEY_HERE` - Your HuggingFace API key from https://huggingface.co/settings/tokens
+- `YOUR_SECURE_PASSWORD_123` - Choose a strong password (used in both `POSTGRES_PASSWORD` and `DB_PASSWORD`)
+- `YOUR_EC2_PUBLIC_IP` - Your EC2 instance public IP (you'll get this after launching EC2)
+
+**Note:** `DB_PASSWORD` must match `POSTGRES_PASSWORD` - they're the same database password.
+
+### 3.3 Verify Secret Creation
+
+```bash
+# List secrets
+aws secretsmanager list-secrets --region us-east-1
+
+# View secret (to verify it was created correctly)
+aws secretsmanager get-secret-value \
+    --secret-id autoblog/production \
+    --region us-east-1 \
+    --query SecretString \
+    --output text
+```
+
+### 3.4 Update Secret (If Needed Later)
+
+If you need to update any secret value (e.g., change password, update EC2 IP):
+
+```bash
+aws secretsmanager update-secret \
+    --secret-id autoblog/production \
+    --secret-string '{
+        "HUGGINGFACE_API_KEY": "hf_YOUR_KEY",
+        "POSTGRES_DB": "autoblog_db",
+        "POSTGRES_USER": "autoblog",
+        "POSTGRES_PASSWORD": "NEW_PASSWORD",
+        "DB_HOST": "database",
+        "DB_PORT": "5432",
+        "DB_NAME": "autoblog_db",
+        "DB_USER": "autoblog",
+        "DB_PASSWORD": "NEW_PASSWORD",
+        "PORT": "3001",
+        "NODE_ENV": "production",
+        "FRONTEND_URL": "http://NEW_EC2_IP",
+        "HUGGINGFACE_API_URL": "https://router.huggingface.co/v1/chat/completions"
+    }' \
+    --region us-east-1
+```
+
+After updating, redeploy to EC2 to fetch the new secrets.
+
+## Step 4: Create CodeBuild Project
+
+### 4.1 Verify buildspec.yml
 
 Your `infra/buildspec.yml` is already configured and ready to use:
 - ✅ AWS Account ID is auto-detected at runtime (no hardcoding needed)
 - ✅ Region defaults to `us-east-1` (change in buildspec if using different region)
-- ✅ No secrets required during build (loaded at runtime on EC2)
+- ✅ No secrets required during build (secrets fetched from Secrets Manager at deployment time)
 
-### 3.2 Create CodeBuild Project via Console
+### 4.2 Create CodeBuild Project via Console
 
 1. Go to AWS CodeBuild → Create build project
 2. **Project name**: `autoblog-build`
@@ -164,7 +263,7 @@ Your `infra/buildspec.yml` is already configured and ready to use:
 - `VITE_API_URL`: Frontend will be built with this API URL (must point to your EC2 instance)
 - `EC2_INSTANCE_ID`: CodeBuild needs this to deploy via SSM to your EC2 instance
 
-### 3.3 Or Create via AWS CLI
+### 4.3 Or Create via AWS CLI
 
 Replace placeholders with your actual values:
 
@@ -207,7 +306,7 @@ aws codebuild create-project \
 - Using `amazonlinux-x86_64-standard:5.0` (latest) with Docker 26
 - AWS Account ID in buildspec is auto-detected at build time
 
-### 3.4 Update Environment Variables (After Creating)
+### 4.4 Update Environment Variables (After Creating)
 
 If you need to update environment variables later (e.g., if EC2 IP changes):
 
@@ -235,9 +334,9 @@ aws codebuild update-project \
     --region us-east-1
 ```
 
-## Step 4: Launch EC2 Instance
+## Step 5: Launch EC2 Instance
 
-### 4.1 Create Security Group
+### 5.1 Create Security Group
 
 ```bash
 aws ec2 create-security-group \
@@ -246,7 +345,7 @@ aws ec2 create-security-group \
     --region us-east-1
 ```
 
-### 4.2 Add Inbound Rules
+### 5.2 Add Inbound Rules
 
 ```bash
 # Get security group ID
@@ -274,7 +373,18 @@ aws ec2 authorize-security-group-ingress \
     --cidr 0.0.0.0/0
 ```
 
-### 4.3 Create IAM Role for EC2
+### 5.3 Create IAM Role for EC2 (Already Done in Step 2.4)
+
+**Note:** We already created the `AutoblogEC2Role` in Step 2.4 with SSM and Secrets Manager permissions. If you skipped that step, go back and complete it now.
+
+The role should have these policies attached:
+- `AmazonEC2ContainerRegistryReadOnly` - To pull Docker images from ECR
+- `AmazonSSMManagedInstanceCore` - For CodeBuild deployment via SSM
+- `SecretsManagerReadWrite` - To fetch secrets from Secrets Manager
+
+### 5.4 Verify IAM Role and Instance Profile
+
+If you need to create the instance profile (if not done in Step 2):
 
 Create `ec2-trust-policy.json`:
 ```json
@@ -313,7 +423,7 @@ aws iam add-role-to-instance-profile \
     --role-name AutoblogEC2Role
 ```
 
-### 4.4 Launch Instance
+### 5.5 Launch Instance
 
 ```bash
 aws ec2 run-instances \
@@ -328,15 +438,17 @@ aws ec2 run-instances \
 
 **Note**: Replace `YOUR_KEY_PAIR` with your EC2 key pair name. Use Amazon Linux 2023 AMI for your region.
 
-## Step 5: Configure EC2 Instance
+## Step 6: Configure EC2 Instance
 
-### 5.1 Connect to EC2
+### 6.1 Connect to EC2
 
 ```bash
 ssh -i YOUR_KEY_PAIR.pem ec2-user@YOUR_EC2_PUBLIC_IP
 ```
 
-### 5.2 Run Initialization Script
+### 6.2 Run Initialization Script (Optional - Manual Setup)
+
+**Note:** The deployment script (Step 7) will automatically clone the repo and set everything up. This step is only if you want to manually initialize the EC2 instance first.
 
 ```bash
 # Set your AWS account details
@@ -344,62 +456,47 @@ export AWS_ACCOUNT_ID=YOUR_ACCOUNT_ID
 export AWS_REGION=us-east-1
 
 # Download and run init script
-curl -o init-ec2.sh https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/infra/scripts/init-ec2.sh
+curl -o init-ec2.sh https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/release-0.1/infra/scripts/init-ec2.sh
 chmod +x init-ec2.sh
 ./init-ec2.sh
 ```
 
-### 5.3 Create Environment File
+### 6.3 Verify Secrets Manager Access
 
-**IMPORTANT:** The `.env` file contains your secrets and is NOT in the GitHub repository (it's in `.gitignore`). You must create it manually on the EC2 instance.
+**IMPORTANT:** The `.env` file is NO LONGER created manually. Instead, it's automatically fetched from AWS Secrets Manager during deployment.
 
-```bash
-cd /opt/autoblog
-
-# Download the .env.example template
-curl -o .env.example https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/.env.example
-
-# Create .env file with your actual values
-cat > .env <<EOF
-# HuggingFace API (REQUIRED - Get from https://huggingface.co/settings/tokens)
-HUGGINGFACE_API_KEY=hf_your_actual_key_here  # ⚠️ REPLACE WITH YOUR KEY
-
-# Database Configuration
-POSTGRES_DB=autoblog_db
-POSTGRES_USER=autoblog
-POSTGRES_PASSWORD=your_secure_password_123  # ⚠️ CHANGE THIS
-
-# Backend Configuration
-DB_HOST=database
-DB_PORT=5432
-DB_NAME=autoblog_db
-DB_USER=autoblog
-DB_PASSWORD=your_secure_password_123  # ⚠️ Must match POSTGRES_PASSWORD
-PORT=3001
-NODE_ENV=production
-FRONTEND_URL=http://YOUR_EC2_PUBLIC_IP  # ⚠️ Replace with your EC2 public IP
-HUGGINGFACE_API_URL=https://router.huggingface.co/v1/chat/completions
-EOF
-
-# Verify the file was created
-cat .env
-```
-
-**Security Notes:**
-- Replace `YOUR_EC2_PUBLIC_IP` with your actual EC2 public IP address
-- Use a strong password for `POSTGRES_PASSWORD`
-- Keep your `.env` file secure - it contains sensitive credentials
-- The `.env` file stays on the EC2 instance and is never committed to git
-
-### 5.4 Download docker-compose.yml
+Verify that your EC2 instance can access Secrets Manager:
 
 ```bash
-curl -o docker-compose.yml https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/docker-compose.yml
+# Test fetching the secret
+aws secretsmanager get-secret-value \
+    --secret-id autoblog/production \
+    --region us-east-1 \
+    --query SecretString \
+    --output text
 ```
 
-## Step 6: Deploy Application
+**Expected Output:** You should see the JSON with all your environment variables.
 
-### 6.1 Run Deployment Script
+**If it fails:**
+- Check that the EC2 role has `SecretsManagerReadWrite` policy attached (see Step 2.4)
+- Verify the secret exists: `aws secretsmanager list-secrets --region us-east-1`
+- Check IAM role is attached to EC2 instance
+
+### 6.4 How the Deployment Works
+
+When you deploy (Step 7), the deployment script automatically:
+1. **Clones/updates** the GitHub repository to `/home/ec2-user/Full-Stack-Technical-Challenge`
+2. **Fetches secrets** from AWS Secrets Manager (`autoblog/production`)
+3. **Creates `.env` file** by converting the JSON secrets to `.env` format
+4. **Pulls Docker images** from ECR
+5. **Starts containers** using `docker-compose-prod.yml`
+
+**No manual `.env` creation needed!** Everything is automated.
+
+## Step 7: Deploy Application
+
+### 7.1 Run Deployment Script
 
 ```bash
 # Set environment variables
@@ -412,7 +509,7 @@ chmod +x deploy.sh
 ./deploy.sh
 ```
 
-### 6.2 Verify Deployment
+### 7.2 Verify Deployment
 
 ```bash
 # Check containers
@@ -426,16 +523,16 @@ curl http://localhost/
 curl http://localhost:3001/health
 ```
 
-## Step 7: Test from Public IP
+## Step 8: Test from Public IP
 
 Open in browser:
 - Frontend: `http://YOUR_EC2_PUBLIC_IP`
 - Backend: `http://YOUR_EC2_PUBLIC_IP:3001/health`
 - Cache Dashboard: `http://YOUR_EC2_PUBLIC_IP:3001/cache-stats`
 
-## Step 8: Set Up CI/CD
+## Step 9: Set Up CI/CD
 
-### 8.1 Trigger Build Manually
+### 9.1 Trigger Build Manually
 
 ```bash
 aws codebuild start-build \
@@ -443,7 +540,7 @@ aws codebuild start-build \
     --region us-east-1
 ```
 
-### 8.2 Watch Build Progress
+### 9.2 Watch Build Progress
 
 ```bash
 aws codebuild batch-get-builds \
@@ -451,17 +548,26 @@ aws codebuild batch-get-builds \
     --region us-east-1
 ```
 
-### 8.3 Deploy After Build
+### 9.3 Automatic Deployment
 
-After CodeBuild completes, SSH to EC2 and run:
-```bash
-cd /opt/autoblog
-./deploy.sh
-```
+**Good news:** Deployment is already automatic! The buildspec.yml (Step 4) includes a post-build step that:
+1. Builds and pushes Docker images to ECR
+2. Automatically deploys to EC2 via SSM using the `deploy-to-ec2.sh` script
+3. EC2 fetches secrets from Secrets Manager
+4. EC2 pulls latest images and restarts containers
 
-### 8.4 (Optional) Automate Deployment
+**No manual deployment needed after CodeBuild completes!**
 
-Add webhook to GitHub or use AWS CodePipeline for automatic deployments.
+### 9.4 (Optional) Automate Builds with GitHub Webhook
+
+To trigger builds automatically on git push:
+
+1. Go to CodeBuild project → Edit → Source
+2. Check "Rebuild every time a code change is pushed to this repository"
+3. Select event types (e.g., PUSH, PULL_REQUEST)
+4. CodeBuild will create a webhook in your GitHub repo
+
+**Note:** This uses more free tier minutes. For cost savings, stick with manual builds.
 
 ## Cost Estimate
 
@@ -469,13 +575,15 @@ Add webhook to GitHub or use AWS CodePipeline for automatic deployments.
 - **EC2 t2.micro**: 750 hours/month (FREE)
 - **ECR**: 500 MB storage (FREE)
 - **CodeBuild**: 100 build minutes/month (FREE)
+- **Secrets Manager**: $0.40/secret/month + $0.05 per 10,000 API calls
 - **Data Transfer**: 15 GB/month (FREE)
 
 ### After Free Tier
 - **EC2 t2.micro**: ~$8-10/month
 - **ECR**: ~$0.10/GB/month
 - **CodeBuild**: $0.005/build minute
-- **Total**: ~$10-15/month
+- **Secrets Manager**: ~$0.40/month (1 secret with minimal API calls)
+- **Total**: ~$10-18/month
 
 ## Troubleshooting
 
@@ -605,6 +713,92 @@ sudo systemctl status amazon-ssm-agent
 
 # Verify instance appears in SSM (run on your local machine)
 aws ssm describe-instance-information --region us-east-1
+```
+
+### Secrets Manager: Access Denied
+
+**Error**: `An error occurred (AccessDeniedException) when calling the GetSecretValue operation`
+
+**Problem**: EC2 instance can't read secrets from Secrets Manager
+
+**Solution**:
+```bash
+# Verify EC2 role has Secrets Manager permissions
+aws iam list-attached-role-policies --role-name AutoblogEC2Role
+
+# If SecretsManagerReadWrite is missing, add it:
+aws iam attach-role-policy \
+    --role-name AutoblogEC2Role \
+    --policy-arn arn:aws:iam::aws:policy/SecretsManagerReadWrite
+
+# Restart docker containers to retry
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+cd /home/ec2-user/Full-Stack-Technical-Challenge
+docker-compose -f docker-compose.prod.yml restart
+```
+
+### Secrets Manager: Secret Not Found
+
+**Error**: `Secrets Manager can't find the specified secret`
+
+**Problem**: The secret `autoblog/production` doesn't exist or is in wrong region
+
+**Solution**:
+```bash
+# List all secrets to verify
+aws secretsmanager list-secrets --region us-east-1
+
+# If missing, create it (see Step 3.2)
+# Make sure to use EXACT name: autoblog/production
+```
+
+### Deployment: .env File Empty or Missing Variables
+
+**Problem**: Containers fail because `.env` has missing or malformed values
+
+**Solution**:
+```bash
+# SSH to EC2
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+
+# Check if .env file exists and has content
+cd /home/ec2-user/Full-Stack-Technical-Challenge
+cat .env
+
+# If .env is missing or malformed, manually fetch secrets
+aws secretsmanager get-secret-value \
+    --secret-id autoblog/production \
+    --region us-east-1 \
+    --query SecretString \
+    --output text | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' > .env
+
+# Verify .env content
+cat .env
+
+# Restart containers
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Backend: Can't Connect to Database
+
+**Problem**: Backend logs show `ECONNREFUSED` connecting to database
+
+**Root Cause**: Database password mismatch or database container not running
+
+**Solution**:
+```bash
+# Check all containers are running
+docker-compose -f docker-compose.prod.yml ps
+
+# If database container is missing, check .env
+cat .env | grep -E "POSTGRES_|DB_"
+
+# Ensure these match:
+# POSTGRES_PASSWORD=<same_password>
+# DB_PASSWORD=<same_password>
+
+# If they don't match, update secret in Secrets Manager (Step 3.4)
+# Then redeploy
 ```
 
 ## Cleanup (When Done)
