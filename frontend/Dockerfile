@@ -2,6 +2,9 @@
 # Stage 1: Build the React application
 FROM public.ecr.aws/docker/library/node:18-alpine AS build
 
+# Build argument for API URL
+ARG VITE_API_URL=http://localhost:3001/api
+
 WORKDIR /app
 
 # Copy package files
@@ -13,7 +16,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application with API URL
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Stage 2: Serve with nginx
