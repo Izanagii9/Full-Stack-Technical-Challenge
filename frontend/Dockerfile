@@ -1,6 +1,10 @@
 # Frontend Dockerfile - Multi-stage build
 # Stage 1: Build the React application
-FROM node:18-alpine AS build
+FROM public.ecr.aws/docker/library/node:18-alpine AS build
+
+# Accept build argument for API URL
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
 
 WORKDIR /app
 
@@ -13,11 +17,11 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application (Vite will embed VITE_API_URL at build time)
 RUN npm run build
 
 # Stage 2: Serve with nginx
-FROM nginx:alpine
+FROM public.ecr.aws/nginx/nginx:alpine
 
 # Copy built files from build stage
 COPY --from=build /app/dist /usr/share/nginx/html

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:16-alpine
+    container_name: autoblog-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoblog-network
+
+  # Backend API - Uses ECR image
+  backend:
+    image: 995554323651.dkr.ecr.us-east-1.amazonaws.com/autoblog-backend:latest
+    container_name: autoblog-backend
+    environment:
+      PORT: ${PORT}
+      NODE_ENV: ${NODE_ENV}
+      FRONTEND_URL: ${FRONTEND_URL}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      HUGGINGFACE_API_URL: ${HUGGINGFACE_API_URL}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
+    ports:
+      - "3001:3001"
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - model_cache:/app/src/lib/cache
+    networks:
+      - autoblog-network
+    command: sh -c "npm run migrate && npm start"
+
+  # Frontend React App - Uses ECR image
+  frontend:
+    image: 995554323651.dkr.ecr.us-east-1.amazonaws.com/autoblog-frontend:latest
+    container_name: autoblog-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - autoblog-network
+
+volumes:
+  postgres_data:
+  model_cache:
+
+networks:
+  autoblog-network:
+    driver: bridge

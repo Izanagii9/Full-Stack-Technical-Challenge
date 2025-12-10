@@ -1,47 +1,68 @@
 # Auto-Generated Blog - Full-Stack Application
 
-A modern full-stack blog application with AI-powered content generation, built with React, Node.js, PostgreSQL, Docker, and AWS deployment.
+A production-ready full-stack blog application with AI-powered content generation, built with React, Node.js, PostgreSQL, Docker, and AWS deployment infrastructure.
+
+🔗 **Live Demo**: http://54.237.240.161 (AWS EC2 deployment)
 
 ## 🚀 Features
 
 - **Frontend**: React 18 with Redux Toolkit state management and i18next (EN/PT)
-- **Backend**: Node.js + Express REST API (English only)
+- **Backend**: Node.js + Express REST API with clean architecture
 - **Responsive Design**: Mobile, tablet, and desktop support
 - **Clean Architecture**: Service layer pattern with separation of concerns
-- **AI Integration**: HuggingFace Router API with adaptive model caching
+- **AI Integration**: HuggingFace Router API with adaptive model caching (FREE tier)
 - **Smart Model Selection**: Performance-based caching with automatic failover
-- **Database**: PostgreSQL with entity pattern and migrations
+- **Database**: PostgreSQL 16 with entity pattern and migrations
 - **Auto-retry**: 5-minute retry mechanism for failed generations
+- **Daily Automation**: Automatic article generation at 00:00 UTC (node-cron)
 - **Monitoring**: Model performance dashboard at `/cache-stats`
 - **Containerization**: Docker with multi-stage builds and orchestration
-- **Cloud Deployment**: AWS EC2 + CodeBuild + ECR (Phase 6 - Planned)
+- **Cloud Deployment**: AWS EC2 + CodeBuild + ECR (PRODUCTION-READY)
 
 ## 📁 Project Structure
 
 ```
 Full-Stack Technical Challenge/
-├── frontend/          # React application
+├── frontend/                 # React application
 │   ├── src/
-│   │   ├── components/   # Reusable UI components
-│   │   ├── pages/        # Page components
-│   │   ├── store/        # Redux store and slices
-│   │   ├── services/     # API service layer
-│   │   ├── i18n/         # Internationalization
-│   │   └── data/         # Mock data (temporary)
-│   ├── .env.example      # Environment template
+│   │   ├── components/      # Reusable UI components
+│   │   ├── pages/           # Page components
+│   │   ├── store/           # Redux store and slices
+│   │   ├── services/        # API service layer
+│   │   └── i18n/            # Internationalization (EN/PT)
+│   ├── Dockerfile           # Multi-stage build
+│   ├── nginx.conf           # Production server config
 │   └── package.json
 │
-├── backend/           # Node.js API
+├── backend/                  # Node.js API
 │   ├── src/
-│   │   ├── controllers/  # Request handlers
-│   │   ├── services/     # Business logic
-│   │   ├── routes/       # API routes
-│   │   ├── middleware/   # Express middleware
-│   │   └── server.js     # Entry point
-│   ├── .env.example      # Environment template
+│   │   ├── ai/              # HuggingFace integration
+│   │   ├── controllers/     # Request handlers
+│   │   ├── services/        # Business logic
+│   │   ├── routes/          # API routes
+│   │   ├── jobs/            # Cron jobs (daily generation)
+│   │   ├── lib/cache/       # Adaptive model caching
+│   │   ├── middleware/      # Express middleware
+│   │   ├── db/migrations/   # PostgreSQL schema
+│   │   └── server.js        # Entry point
+│   ├── Dockerfile           # Production container
 │   └── package.json
 │
-└── README.md          # This file
+├── infra/                    # AWS infrastructure
+│   ├── scripts/             # Deployment automation
+│   │   ├── init-ec2.sh      # EC2 setup
+│   │   └── deploy-to-ec2.sh # Auto-deployment
+│   ├── buildspec.yml        # CodeBuild configuration
+│   └── AWS_SETUP.md         # Complete deployment guide
+│
+├── docs/                     # Documentation
+│   └── ARCHITECTURE.md      # System architecture
+│
+├── docker-compose.yml        # Local development
+├── docker-compose.prod.yml   # Production deployment
+├── DOCKER.md                # Docker guide
+├── DEVELOPMENT_LOG.md       # Development history
+└── README.md                # This file
 ```
 
 ## 🛠️ Setup Instructions
@@ -250,34 +271,70 @@ HUGGINGFACE_API_KEY=hf_your_actual_key  # Get from https://huggingface.co/settin
 
 ## ☁️ AWS Deployment
 
-The application is ready for deployment to AWS using EC2, ECR, and CodeBuild.
+The application is **production-deployed** on AWS using EC2, ECR, and CodeBuild.
 
-### Quick Deploy to AWS
+🔗 **Live Application**: http://54.237.240.161
 
-1. **Prerequisites**: AWS account, AWS CLI configured
-2. **Follow the guide**: See [infra/AWS_SETUP.md](infra/AWS_SETUP.md) for complete instructions
-3. **What you'll set up**:
-   - ECR repositories for Docker images
-   - CodeBuild project for CI/CD
-   - EC2 instance with Docker
-   - Automated deployment pipeline
+### Deployed Infrastructure
 
-### Architecture
+**Active Resources**:
+- ✅ **EC2 Instance** (i-0fcc7cfea1674063f): t2.micro running Docker containers
+- ✅ **ECR Repositories**: `autoblog-frontend` and `autoblog-backend`
+- ✅ **CodeBuild Project**: `autoblog-build` with automated deployment
+- ✅ **Security Group**: Ports 80 (HTTP), 3001 (API), 22 (SSH)
+- ✅ **IAM Roles**: AutoblogEC2Role, AutoblogCodeBuildRole
+
+### CI/CD Pipeline
 
 ```
-GitHub → CodeBuild → ECR → EC2
-  │         │         │      │
-  │         │         │      ├─ Frontend (nginx:80)
-  │         │         │      ├─ Backend (node:3001)
-  │         │         │      └─ Database (postgres:5432)
+GitHub Push → CodeBuild → ECR → EC2 Deployment
+     │            │         │           │
+     │            │         │           ├─ Frontend (nginx:80)
+     │            │         │           ├─ Backend (node:3001)
+     │            │         │           └─ PostgreSQL (5432)
+     │            │         │
+     │            │         └─ Docker Images Tagged & Pushed
+     │            │
+     │            └─ buildspec.yml:
+     │               • Build frontend with VITE_API_URL
+     │               • Build backend
+     │               • Push to ECR
+     │               • Deploy via SSM to EC2
+     │
+     └─ Triggers build on commit
+```
+
+### Deploy Your Own
+
+1. **Prerequisites**: AWS account, AWS CLI configured
+2. **Follow the guide**: See [infra/AWS_SETUP.md](infra/AWS_SETUP.md) for step-by-step instructions
+3. **What you'll set up**:
+   - ECR repositories for Docker images
+   - CodeBuild project for automated builds
+   - EC2 instance with Docker and PostgreSQL
+   - Automated deployment pipeline with SSM
+
+### Manual Deployment to EC2
+
+```bash
+# Trigger CodeBuild
+aws codebuild start-build --project-name autoblog-build --region us-east-1
+
+# Or deploy directly to EC2
+cd infra/scripts
+chmod +x deploy-to-ec2.sh
+./deploy-to-ec2.sh
 ```
 
 ### Cost Estimate
 
 - **Free Tier**: EC2 t2.micro (750 hrs/month), ECR (500 MB), CodeBuild (100 min/month)
-- **After Free Tier**: ~$10-15/month
+- **After Free Tier**: ~$10-18/month
+- **AI Generation**: FREE (HuggingFace Router API free tier)
 
-For detailed deployment instructions, see [infra/AWS_SETUP.md](infra/AWS_SETUP.md).
+### Architecture Details
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete system architecture, data flow diagrams, and deployment details.
 
 ## 🚧 Development Phases
 
@@ -288,31 +345,47 @@ For detailed deployment instructions, see [infra/AWS_SETUP.md](infra/AWS_SETUP.m
 - ✅ **Phase 4.5**: AI model caching & retry mechanism
 - ✅ **Phase 5**: Docker containerization
 - ✅ **Phase 6**: AWS deployment infrastructure (EC2, CodeBuild, ECR)
+- ✅ **Phase 7**: Production deployment and optimization
 
-## 🎯 Current State
+## 🎯 Production Status
 
-The application is **fully containerized** and **production-ready** with complete AWS deployment infrastructure. Uses real AI-generated content from HuggingFace models with intelligent caching and automatic failover. Articles are stored in **PostgreSQL** and persist across restarts.
+The application is **LIVE** and deployed on AWS EC2: http://54.237.240.161
 
-**Key Features Implemented**:
-- Docker containerization with multi-stage builds
-- Adaptive model selection based on performance
-- 5-minute auto-retry for failed generations
-- Daily automated article creation (00:00 UTC)
-- Model performance dashboard
-- Production-ready error handling
-- Intelligent error classification (auth vs. model errors)
-- Docker-managed persistent volumes
-- AWS deployment infrastructure (ECR, CodeBuild, EC2)
+**Production Features**:
+- ✅ Full CI/CD pipeline (GitHub → CodeBuild → ECR → EC2)
+- ✅ Multi-stage Docker builds for optimized images
+- ✅ Adaptive AI model caching with performance scoring
+- ✅ Daily automated article generation at 00:00 UTC
+- ✅ 5-minute auto-retry for failed AI generations
+- ✅ PostgreSQL persistent storage with migrations
+- ✅ Production nginx with security headers and gzip
+- ✅ Environment-based configuration (dev/prod)
+- ✅ Comprehensive monitoring and health checks
+- ✅ Intelligent error handling and logging
 
-**Quick Start with Docker**:
+**Live Endpoints**:
+- **Frontend**: http://54.237.240.161
+- **Backend API**: http://54.237.240.161:3001/health
+- **Cache Dashboard**: http://54.237.240.161:3001/cache-stats
+
+**Quick Start Locally**:
 ```bash
+# Copy environment template
+cp .env.example .env
+
+# Add your HuggingFace API key to .env
+# HUGGINGFACE_API_KEY=hf_your_key_here
+
+# Start all services
 docker-compose up -d
+
+# Access application
 # Frontend: http://localhost
 # Backend: http://localhost:3001
 # Cache Dashboard: http://localhost:3001/cache-stats
 ```
 
-**Deploy to AWS**: See [infra/AWS_SETUP.md](infra/AWS_SETUP.md) for complete deployment guide.
+**Deploy Your Own**: See [infra/AWS_SETUP.md](infra/AWS_SETUP.md) for complete AWS deployment guide.
 
 ## 📦 Scripts
 
