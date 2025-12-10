@@ -18,64 +18,63 @@ This guide explains how to run the Auto-Generated Blog application using Docker 
 2. Create a new token (read access is sufficient)
 3. Copy the token (starts with `hf_...`)
 
-### Configure docker-compose.yml
+### Configure Environment Variables
 
-Before running `docker-compose up`, you **MUST** edit `docker-compose.yml`:
+Before running `docker-compose up`, you **MUST** create and configure the `.env` file:
 
-**Line 40: Add your HuggingFace API key**
-```yaml
-HUGGINGFACE_API_KEY: hf_YOUR_ACTUAL_KEY_HERE  # ⚠️ REPLACE THIS
+**Step 1: Copy the example file**
+```bash
+cp .env.example .env
 ```
 
-**Lines 10-11: (Optional) Change database credentials**
-```yaml
-POSTGRES_USER: postgre           # Change if desired
-POSTGRES_PASSWORD: postgre       # ⚠️ Use a strong password
+**Step 2: Edit the `.env` file**
+
+Open `.env` in your text editor and update these values:
+
+```bash
+# HuggingFace API (REQUIRED - Get from https://huggingface.co/settings/tokens)
+HUGGINGFACE_API_KEY=hf_YOUR_ACTUAL_KEY_HERE  # ⚠️ REPLACE THIS
+
+# Database Configuration (Optional but recommended)
+POSTGRES_DB=autoblog_db
+POSTGRES_USER=autoblog
+POSTGRES_PASSWORD=MySecurePassword123  # ⚠️ Change to a strong password
+
+# Backend Configuration (must match database credentials)
+DB_HOST=database
+DB_PORT=5432
+DB_NAME=autoblog_db
+DB_USER=autoblog
+DB_PASSWORD=MySecurePassword123  # ⚠️ Must match POSTGRES_PASSWORD
+PORT=3001
+NODE_ENV=production
+FRONTEND_URL=http://localhost
+HUGGINGFACE_API_URL=https://router.huggingface.co/v1/chat/completions
 ```
 
-**Line 17: Update health check to match database user**
-```yaml
-test: ["CMD-SHELL", "pg_isready -U autoblog -d autoblog_db"]  # Must match POSTGRES_USER
-```
+**Important: Database credentials must match:**
+- `POSTGRES_USER` must equal `DB_USER`
+- `POSTGRES_PASSWORD` must equal `DB_PASSWORD`
+- `POSTGRES_DB` must equal `DB_NAME`
 
-**Lines 37-38: Update backend database credentials to match**
-```yaml
-DB_USER: postgre                 # Must match POSTGRES_USER above
-DB_PASSWORD: postgre             # Must match POSTGRES_PASSWORD above
-```
+### Security Notes
 
-### Example Configuration
-
-```yaml
-# Database service (lines 9-11)
-environment:
-  POSTGRES_DB: autoblog_db
-  POSTGRES_USER: myuser              # Your choice
-  POSTGRES_PASSWORD: MySecurePass123  # Strong password
-
-# Database healthcheck (line 17)
-healthcheck:
-  test: ["CMD-SHELL", "pg_isready -U myuser -d autoblog_db"]  # Must match POSTGRES_USER
-
-# Backend service (lines 37-40)
-environment:
-  DB_USER: myuser                     # Same as POSTGRES_USER
-  DB_PASSWORD: MySecurePass123         # Same as POSTGRES_PASSWORD
-  HUGGINGFACE_API_KEY: hf_abc123xyz   # Your actual key
-```
-
-**Important: All three places must match:**
-1. `POSTGRES_USER` (line 10)
-2. `pg_isready -U username` (line 17 in healthcheck)
-3. `DB_USER` (line 37)
+- **NEVER commit the `.env` file to git** - it's already in `.gitignore`
+- The `.env.example` file is safe to commit (it contains no secrets)
+- Change the default passwords before deploying to production
 
 ## Quick Start
 
 ### 1. Configure (First Time Only)
 
-**Edit `docker-compose.yml` and set:**
-- `HUGGINGFACE_API_KEY` (line 40) - **REQUIRED**
-- Database credentials (optional, but recommended for production)
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env and add your API key
+# Required: HUGGINGFACE_API_KEY
+# Recommended: Change POSTGRES_PASSWORD
+```
 
 ### 2. Start All Services
 
