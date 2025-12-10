@@ -14,6 +14,7 @@ phases:
   pre_build:
     commands:
       - echo "=== Pre-build phase started ==="
+      - echo "EC2_INSTANCE_ID=$EC2_INSTANCE_ID"
       - echo "Testing AWS STS access..."
       - aws sts get-caller-identity
       - echo "Extracting AWS Account ID..."
