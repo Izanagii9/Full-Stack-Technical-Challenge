@@ -55,8 +55,27 @@ export const generateArticle = async (topic = null) => {
       console.error(`❌ Model failed: ${model}`);
       console.error(`   Error: ${error.message}`);
 
-      // Record failure for adaptive learning
-      recordFailure(model);
+      // Only record failure if it's the model's fault, not user's
+      if (!error.isUserFault) {
+        console.error(`   Recording failure for model: ${model}`);
+        recordFailure(model);
+      } else {
+        console.error(`   User-side error (${error.type}), not recording against model`);
+      }
+
+      // If it's an auth error, stop trying other models
+      if (error.type === 'AUTH_ERROR') {
+        throw new Error(
+          'Authentication failed: Invalid or missing HuggingFace API key. Please check your HUGGINGFACE_API_KEY environment variable.'
+        );
+      }
+
+      // If it's rate limiting, stop trying
+      if (error.type === 'RATE_LIMIT') {
+        throw new Error(
+          'Rate limit exceeded. Please try again later.'
+        );
+      }
 
       // If this was the last model, throw error
       if (isLastModel) {

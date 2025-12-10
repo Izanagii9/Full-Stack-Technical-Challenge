@@ -13,7 +13,7 @@ A modern full-stack blog application with AI-powered content generation, built w
 - **Database**: PostgreSQL with entity pattern and migrations ✅
 - **Auto-retry**: 5-minute retry mechanism for failed generations
 - **Monitoring**: Model performance dashboard at `/cache-stats`
-- **Containerization**: Docker support (Phase 5 - Planned)
+- **Containerization**: Docker with multi-stage builds and orchestration ✅
 - **Cloud Deployment**: AWS EC2 + CodeBuild + ECR (Phase 6 - Planned)
 
 ## 📁 Project Structure
@@ -87,6 +87,77 @@ The backend will run on **http://localhost:3001**
 - Frontend: Open http://localhost:3000 in your browser
 - Backend health check: Open http://localhost:3001/health
 
+## 🐳 Docker Setup (Recommended)
+
+### ⚠️ Before You Start
+
+**IMPORTANT: You MUST configure your HuggingFace API key before running Docker!**
+
+1. **Get API Key**: Go to https://huggingface.co/settings/tokens and create a token
+2. **Edit `docker-compose.yml`**:
+   - Line 40: Replace `HUGGINGFACE_API_KEY` with your actual key
+   - Lines 10-11: (Optional) Change database credentials
+   - Line 17: Update healthcheck `-U username` to match your POSTGRES_USER
+   - Lines 37-38: Update backend DB credentials to match
+
+**Example:**
+```yaml
+HUGGINGFACE_API_KEY: hf_your_actual_key_here  # ⚠️ REQUIRED
+POSTGRES_PASSWORD: your_secure_password       # Recommended
+```
+
+See [DOCKER.md](DOCKER.md) for detailed configuration instructions.
+
+### Quick Start
+
+```bash
+# 1. Edit docker-compose.yml first (add API key!)
+
+# 2. Start all services
+docker-compose up -d
+
+# 3. View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+### Access Application
+
+- **Frontend**: http://localhost
+- **Backend API**: http://localhost:3001/health
+- **Cache Dashboard**: http://localhost:3001/cache-stats
+- **Database**: localhost:5432 (user: autoblog, password: see docker-compose.yml)
+
+### Docker Services
+
+- **frontend**: React app served via nginx on port 80
+- **backend**: Node.js API on port 3001 (auto-runs migrations)
+- **database**: PostgreSQL 16 on port 5432
+
+### Common Docker Commands
+
+```bash
+# Rebuild containers
+docker-compose up -d --build
+
+# View container status
+docker-compose ps
+
+# Access backend shell
+docker-compose exec backend sh
+
+# Run migrations manually
+docker-compose exec backend npm run migrate
+
+# Clear all data and restart fresh
+docker-compose down -v
+docker-compose up -d
+```
+
+For detailed Docker documentation, see [DOCKER.md](DOCKER.md).
+
 ## 🌐 API Endpoints
 
 ### Articles
@@ -130,12 +201,31 @@ The backend will run on **http://localhost:3001**
 
 ## 📝 Environment Variables
 
-### Frontend (.env)
+### Docker (Recommended - Edit docker-compose.yml)
+
+For Docker deployment, all configuration is in `docker-compose.yml`. **You MUST set:**
+
+```yaml
+# Backend service environment (required)
+HUGGINGFACE_API_KEY: hf_your_actual_key  # ⚠️ REQUIRED - Get from https://huggingface.co/settings/tokens
+
+# Database credentials (optional, but recommended to change)
+POSTGRES_USER: autoblog
+POSTGRES_PASSWORD: your_secure_password
+
+# Backend database connection (must match database credentials)
+DB_USER: autoblog
+DB_PASSWORD: your_secure_password
+```
+
+### Local Development (.env files)
+
+#### Frontend (.env)
 ```
 VITE_API_URL=http://localhost:3001/api
 ```
 
-### Backend (.env)
+#### Backend (.env)
 ```
 PORT=3001
 NODE_ENV=production
@@ -148,9 +238,12 @@ DB_NAME=autoblog_db
 DB_USER=postgres
 DB_PASSWORD=your_password
 
-# HuggingFace Router API
+# HuggingFace Router API (⚠️ REQUIRED)
 HUGGINGFACE_API_URL=https://router.huggingface.co/v1/chat/completions
+HUGGINGFACE_API_KEY=hf_your_actual_key  # Get from https://huggingface.co/settings/tokens
 ```
+
+**Without a valid `HUGGINGFACE_API_KEY`, the application cannot generate articles.**
 
 ## 🚧 Development Phases
 
@@ -159,21 +252,32 @@ HUGGINGFACE_API_URL=https://router.huggingface.co/v1/chat/completions
 - ✅ **Phase 3**: AI integration with HuggingFace Router API
 - ✅ **Phase 4**: PostgreSQL database with migrations
 - ✅ **Phase 4.5**: AI model caching & retry mechanism
-- ⏳ **Phase 5**: Docker containerization
+- ✅ **Phase 5**: Docker containerization
 - ⏳ **Phase 6**: AWS deployment (EC2, CodeBuild, ECR)
 
 ## 🎯 Current State
 
-The application uses **real AI-generated content** from HuggingFace models with intelligent caching and automatic failover. Articles are stored in **PostgreSQL** and persist across restarts.
+The application is **fully containerized** and production-ready. Uses real AI-generated content from HuggingFace models with intelligent caching and automatic failover. Articles are stored in **PostgreSQL** and persist across restarts.
 
 **Key Features Implemented**:
+- Docker containerization with multi-stage builds
 - Adaptive model selection based on performance
 - 5-minute auto-retry for failed generations
 - Daily automated article creation (00:00 UTC)
 - Model performance dashboard
 - Production-ready error handling
+- Intelligent error classification (auth vs. model errors)
+- Docker-managed persistent volumes
 
-**Next steps**: Docker containerization for cloud deployment.
+**Quick Start with Docker**:
+```bash
+docker-compose up -d
+# Frontend: http://localhost
+# Backend: http://localhost:3001
+# Cache Dashboard: http://localhost:3001/cache-stats
+```
+
+**Next steps**: AWS deployment (EC2, CodeBuild, ECR).
 
 ## 📦 Scripts
 
