@@ -6,7 +6,6 @@ version: 0.2
 env:
   variables:
     AWS_DEFAULT_REGION: "us-east-1"
-    AWS_ACCOUNT_ID: "YOUR_AWS_ACCOUNT_ID"
     FRONTEND_REPO_NAME: "autoblog-frontend"
     BACKEND_REPO_NAME: "autoblog-backend"
     IMAGE_TAG: "latest"
@@ -15,6 +14,8 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
+      - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - echo "AWS Account ID - $AWS_ACCOUNT_ID"
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       - FRONTEND_REPO_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO_NAME
       - BACKEND_REPO_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$BACKEND_REPO_NAME
@@ -53,11 +54,6 @@ phases:
       - docker push $BACKEND_REPO_URI:latest
       - docker push $BACKEND_REPO_URI:$IMAGE_TAG
 
-      - echo Writing image definitions file...
-      - printf '[{"name":"frontend","imageUri":"%s"},{"name":"backend","imageUri":"%s"}]' $FRONTEND_REPO_URI:$IMAGE_TAG $BACKEND_REPO_URI:$IMAGE_TAG > imagedefinitions.json
-
-artifacts:
-  files:
-    - imagedefinitions.json
-    - infra/scripts/deploy.sh
-    - docker-compose.yml
+      - echo Images pushed successfully to ECR
+      - 'echo "Frontend image: ${FRONTEND_REPO_URI}:${IMAGE_TAG}"'
+      - 'echo "Backend image: ${BACKEND_REPO_URI}:${IMAGE_TAG}"'
