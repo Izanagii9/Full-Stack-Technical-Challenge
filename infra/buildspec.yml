@@ -63,3 +63,13 @@ phases:
       - echo Images pushed successfully to ECR
       - 'echo "Frontend image: ${FRONTEND_REPO_URI}:${IMAGE_TAG}"'
       - 'echo "Backend image: ${BACKEND_REPO_URI}:${IMAGE_TAG}"'
+
+      # Deploy to EC2
+      - |
+        if [ -n "$EC2_INSTANCE_ID" ]; then
+          echo "=== Deploying to EC2 ==="
+          chmod +x infra/scripts/deploy-to-ec2.sh
+          bash infra/scripts/deploy-to-ec2.sh
+        else
+          echo "EC2_INSTANCE_ID not set, skipping deployment"
+        fi
