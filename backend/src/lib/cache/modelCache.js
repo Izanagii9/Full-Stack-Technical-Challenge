@@ -197,9 +197,45 @@ function calculatePerformanceScore(model) {
 }
 
 /**
- * Get sorted models by priority (performance + recency)
- * Models are sorted by PRIORITY for selection, but ranked by PERFORMANCE for deletion
- * @returns {string[]} Array of model IDs sorted by priority (performance + recency)
+ * Weighted random selection based on priority scores
+ * Higher priority = higher chance of being selected
+ * @param {Array} modelsWithScores - Array of models with scores
+ * @returns {string[]} Array of model IDs in weighted random order
+ */
+function weightedRandomSort(modelsWithScores) {
+  const result = [];
+  const remaining = [...modelsWithScores];
+
+  while (remaining.length > 0) {
+    // Calculate total priority of remaining models
+    const totalPriority = remaining.reduce((sum, m) => sum + m.priorityScore, 0);
+
+    // Pick random number between 0 and total priority
+    let random = Math.random() * totalPriority;
+
+    // Select model based on weighted probability
+    let selectedIndex = 0;
+    for (let i = 0; i < remaining.length; i++) {
+      random -= remaining[i].priorityScore;
+      if (random <= 0) {
+        selectedIndex = i;
+        break;
+      }
+    }
+
+    // Add selected model to result and remove from remaining
+    const selected = remaining.splice(selectedIndex, 1)[0];
+    result.push(selected);
+  }
+
+  return result;
+}
+
+/**
+ * Get models sorted by weighted random selection based on priority
+ * Higher priority = higher chance of being first, but it's randomized
+ * Performance score is separate and used only for deletion
+ * @returns {string[]} Array of model IDs in weighted random order
  */
 export function getSortedModels() {
   const cache = loadCache();
@@ -213,33 +249,31 @@ export function getSortedModels() {
     // Priority score (for selection) - performance + recency bonus
     const lastAttempt = Math.max(model.lastSuccess || 0, model.lastFailure || 0);
     const recencyBonus = calculateRecencyBonus(lastAttempt);
-    const priorityScore = Math.min(1.5, performanceScore + recencyBonus); // Allow > 1.0 for sorting
+    const priorityScore = Math.max(0.01, performanceScore + recencyBonus); // Min 0.01 for weighted random
 
     return {
       id: model.id,
       performanceScore,    // Shown score, used for deletion
       recencyBonus,
-      priorityScore,       // Used for selection order
+      priorityScore,       // Used for weighted random selection
       lastAttempt
     };
   });
 
-  // Sort by PRIORITY score (highest first) for selection
-  const sorted = modelsWithScores
-    .sort((a, b) => b.priorityScore - a.priorityScore)
-    .map(m => {
-      // Log scoring details for top 3
-      const rank = modelsWithScores.indexOf(m) + 1;
-      if (rank <= 3) {
-        const daysSince = m.lastAttempt
-          ? Math.floor((now - m.lastAttempt) / (24 * 60 * 60 * 1000))
-          : 'never';
-        console.log(`   #${rank} ${m.id}: performance=${m.performanceScore.toFixed(2)}, recency=+${m.recencyBonus.toFixed(2)}, priority=${m.priorityScore.toFixed(2)} (last: ${daysSince} days)`);
-      }
-      return m.id;
-    });
+  // Sort by weighted random selection based on priority scores
+  const sorted = weightedRandomSort(modelsWithScores);
 
-  return sorted;
+  // Log selection probabilities for top 3
+  const totalPriority = modelsWithScores.reduce((sum, m) => sum + m.priorityScore, 0);
+  sorted.slice(0, 3).forEach((m, index) => {
+    const probability = ((m.priorityScore / totalPriority) * 100).toFixed(1);
+    const daysSince = m.lastAttempt
+      ? Math.floor((now - m.lastAttempt) / (24 * 60 * 60 * 1000))
+      : 'never';
+    console.log(`   #${index + 1} ${m.id}: performance=${m.performanceScore.toFixed(2)}, priority=${m.priorityScore.toFixed(2)}, chance=${probability}% (last: ${daysSince} days)`);
+  });
+
+  return sorted.map(m => m.id);
 }
 
 /**
