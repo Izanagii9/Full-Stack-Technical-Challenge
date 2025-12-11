@@ -120,9 +120,15 @@ export function buildUserPrompt(topic) {
     return `Write a comprehensive blog article about: ${topic}`;
   }
 
-  // Select a random topic to ensure diversity
-  const randomTopic = getRandomTopic();
-  console.log(`📝 Selected random topic: ${randomTopic}`);
+  // Let AI choose truly random topics with safety guidelines
+  console.log(`🎲 AI will choose a completely random topic`);
 
-  return `Write a comprehensive blog article about: ${randomTopic}`;
+  return `Choose any interesting topic you want to write about, then write a comprehensive blog article about it.
+
+Guidelines:
+- Can be about technology, science, hobbies, lifestyle, culture, entertainment, sports, nature, travel, food, art, music, gaming, pets, education, or any other topic
+- Should be appropriate for a general audience (no adult content, violence, or dark themes)
+- Can be fun, quirky, or unexpected topics like dolls, collecting, origami, or unusual hobbies
+- Pick something genuinely interesting that would engage readers
+- Make the title creative and reflective of your chosen topic`;
 }
