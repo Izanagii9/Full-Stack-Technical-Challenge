@@ -25,3 +25,8 @@ Thumbs.db
 # Docker volumes
 postgres_data/
 model_cache/
+
+# AWS Keys and Credentials (NEVER COMMIT!)
+*.pem
+*-key.pem
+*-trust-policy.json
