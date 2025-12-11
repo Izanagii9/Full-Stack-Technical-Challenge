@@ -2,7 +2,7 @@
 
 A production-ready full-stack blog application with AI-powered content generation, built with React, Node.js, PostgreSQL, Docker, and AWS deployment infrastructure.
 
-🔗 **Live Demo**: http://54.237.240.161 (AWS EC2 deployment)
+🔗 **Live Demo**: http://52.90.3.31 (AWS EC2 deployment)
 
 ## 🚀 Features
 
@@ -349,7 +349,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete system architectur
 
 ## 🎯 Production Status
 
-The application is **LIVE** and deployed on AWS EC2: http://54.237.240.161
+The application is **LIVE** and deployed on AWS EC2: http://52.90.3.31
 
 **Production Features**:
 - ✅ Full CI/CD pipeline (GitHub → CodeBuild → ECR → EC2)
