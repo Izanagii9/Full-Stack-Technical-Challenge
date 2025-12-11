@@ -273,7 +273,7 @@ HUGGINGFACE_API_KEY=hf_your_actual_key  # Get from https://huggingface.co/settin
 
 The application is **production-deployed** on AWS using EC2, ECR, and CodeBuild.
 
-🔗 **Live Application**: http://54.237.240.161
+🔗 **Live Application**: http://52.90.3.31
 
 ### Deployed Infrastructure
 
@@ -364,9 +364,9 @@ The application is **LIVE** and deployed on AWS EC2: http://52.90.3.31
 - ✅ Intelligent error handling and logging
 
 **Live Endpoints**:
-- **Frontend**: http://54.237.240.161
-- **Backend API**: http://54.237.240.161:3001/health
-- **Cache Dashboard**: http://54.237.240.161:3001/cache-stats
+- **Frontend**: http://52.90.3.31
+- **Backend API**: http://52.90.3.31:3001/health
+- **Cache Dashboard**: http://52.90.3.31:3001/cache-stats
 
 **Quick Start Locally**:
 ```bash
