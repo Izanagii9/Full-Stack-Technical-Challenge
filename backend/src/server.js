@@ -16,8 +16,12 @@ const PORT = process.env.PORT || 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Middleware
+// In production with nginx reverse proxy, requests come from same origin
+// In development, allow localhost origins
 app.use(cors({
-  origin: '*', // Allow all origins in development
+  origin: process.env.NODE_ENV === 'production'
+    ? [FRONTEND_URL, 'http://44.196.118.30']
+    : '*',
   credentials: true
 }));
 app.use(express.json());

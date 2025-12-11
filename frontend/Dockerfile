@@ -2,11 +2,10 @@
 # Stage 1: Build the React application
 FROM public.ecr.aws/docker/library/node:18-alpine AS build
 
-# Accept build argument for API URL
-ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
-
 WORKDIR /app
+
+# Set production API URL to use nginx reverse proxy
+ENV VITE_API_URL=/api
 
 # Copy package files
 COPY package*.json ./

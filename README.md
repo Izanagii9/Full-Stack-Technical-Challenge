@@ -296,7 +296,7 @@ GitHub Push → CodeBuild → ECR → EC2 Deployment
      │            │         └─ Docker Images Tagged & Pushed
      │            │
      │            └─ buildspec.yml:
-     │               • Build frontend with VITE_API_URL
+     │               • Build frontend (uses nginx reverse proxy)
      │               • Build backend
      │               • Push to ECR
      │               • Deploy via SSM to EC2

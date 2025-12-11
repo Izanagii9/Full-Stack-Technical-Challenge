@@ -246,8 +246,7 @@ Your `infra/buildspec.yml` is already configured and ready to use:
    - **Additional configuration** (expand this section):
      - Privileged: ✅ **ENABLE** (required for Docker)
      - Compute: 3 GB memory, 2 vCPUs
-     - **Environment variables** (CRITICAL - Add these):
-       - Name: `VITE_API_URL`, Value: `http://YOUR_EC2_PUBLIC_IP:3001/api`, Type: Plaintext
+     - **Environment variables** (CRITICAL - Add this):
        - Name: `EC2_INSTANCE_ID`, Value: `i-xxxxxxxxxxxxx` (your EC2 instance ID), Type: Plaintext
 5. **Buildspec**:
    - Use a buildspec file
@@ -259,9 +258,10 @@ Your `infra/buildspec.yml` is already configured and ready to use:
    - Group name: `/aws/codebuild/autoblog-build` (default)
 8. Create build project
 
-**⚠️ CRITICAL:** The environment variables are required for deployment:
-- `VITE_API_URL`: Frontend will be built with this API URL (must point to your EC2 instance)
+**⚠️ CRITICAL:** Environment variable required for deployment:
 - `EC2_INSTANCE_ID`: CodeBuild needs this to deploy via SSM to your EC2 instance
+
+**Note**: Frontend uses nginx reverse proxy (`/api` → `backend:3001`), so no IP configuration is needed at build time.
 
 ### 4.3 Or Create via AWS CLI
 
@@ -283,11 +283,6 @@ aws codebuild create-project \
         "privilegedMode": true,
         "environmentVariables": [
             {
-                "name": "VITE_API_URL",
-                "value": "http://YOUR_EC2_PUBLIC_IP:3001/api",
-                "type": "PLAINTEXT"
-            },
-            {
                 "name": "EC2_INSTANCE_ID",
                 "value": "i-xxxxxxxxxxxxx",
                 "type": "PLAINTEXT"
@@ -300,8 +295,8 @@ aws codebuild create-project \
 
 **Important Notes:**
 - Replace `YOUR_USERNAME/YOUR_REPO` with your GitHub repository
-- Replace `YOUR_EC2_PUBLIC_IP` with your EC2 instance's public IP
 - Replace `i-xxxxxxxxxxxxx` with your EC2 instance ID
+- Frontend uses nginx reverse proxy, no IP configuration needed
 - Replace `YOUR_ACCOUNT_ID` with your AWS account ID
 - Using `amazonlinux-x86_64-standard:5.0` (latest) with Docker 26
 - AWS Account ID in buildspec is auto-detected at build time
@@ -319,11 +314,6 @@ aws codebuild update-project \
         "computeType": "BUILD_GENERAL1_SMALL",
         "privilegedMode": true,
         "environmentVariables": [
-            {
-                "name": "VITE_API_URL",
-                "value": "http://NEW_EC2_IP:3001/api",
-                "type": "PLAINTEXT"
-            },
             {
                 "name": "EC2_INSTANCE_ID",
                 "value": "i-xxxxxxxxxxxxx",
@@ -602,11 +592,6 @@ aws codebuild update-project \
         "privilegedMode": true,
         "environmentVariables": [
             {
-                "name": "VITE_API_URL",
-                "value": "http://44.196.118.30:3001/api",
-                "type": "PLAINTEXT"
-            },
-            {
                 "name": "EC2_INSTANCE_ID",
                 "value": "i-0fcc7cfea1674063f",
                 "type": "PLAINTEXT"
@@ -662,16 +647,17 @@ aws codebuild batch-get-builds --ids YOUR_BUILD_ID --region us-east-1
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
 ```
 
-### Frontend Shows Localhost API Error
+### Frontend API Connection Issues
 
-**Problem**: Frontend trying to connect to `http://localhost:3001/api`
+**Problem**: Frontend cannot connect to backend API
 
-**Root Cause**: CodeBuild environment variable `VITE_API_URL` not set
+**Root Cause**: nginx reverse proxy not configured or containers not on same network
 
 **Solution**:
-1. Update CodeBuild environment variables (see above)
-2. Rebuild: `aws codebuild start-build --project-name autoblog-build --region us-east-1`
-3. Verify in build logs: Look for `VITE_API_URL=http://YOUR_IP:3001/api`
+1. Verify nginx.conf has `/api` proxy_pass to `http://backend:3001`
+2. Verify containers are on same Docker network (docker-compose)
+3. Check backend is running: `docker-compose ps`
+4. Check nginx logs: `docker-compose logs frontend`
 
 ### Container Fails to Start
 ```bash
