@@ -35,5 +35,18 @@ export function buildUserPrompt(topic) {
     return `Write a comprehensive blog article about: ${topic}`;
   }
 
-  return `Choose an interesting and current technology topic, then write a comprehensive blog article about it. The title should reflect your chosen topic.`;
+  // Let AI choose truly random topics with safety guidelines
+  console.log(`🎲 AI choosing completely random topic`);
+
+  return `Choose any interesting topic you want to write about, then write a comprehensive blog article about it.
+
+IMPORTANT: Pick a DIFFERENT topic each time. Avoid repeating topics from previous articles.
+
+Guidelines:
+- Can be about ANYTHING: technology, science, hobbies, lifestyle, culture, entertainment, sports, nature, travel, food, art, music, gaming, pets, education, health, fashion, history, philosophy, etc.
+- Should be appropriate for general audience (no adult content, violence, or dark themes)
+- Can be fun, quirky, or unexpected topics (dolls, collecting, origami, coffee brewing, bird watching, stargazing, puzzles, etc.)
+- Pick something genuinely interesting and engaging
+- BE CREATIVE - don't default to popular tech topics
+- Make the title creative and specific to your chosen topic`;
 }
