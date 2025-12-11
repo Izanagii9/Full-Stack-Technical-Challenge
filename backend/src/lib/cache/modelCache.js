@@ -163,26 +163,69 @@ export function recordFailure(modelId) {
 }
 
 /**
- * Get sorted models by score (best first)
- * @returns {string[]} Array of model IDs sorted by performance
+ * Calculate recency bonus - models not tried recently get higher priority
+ * @param {number} lastAttempt - Timestamp of last attempt (success or failure)
+ * @returns {number} Bonus score (0.0 to 0.3)
+ */
+function calculateRecencyBonus(lastAttempt) {
+  if (!lastAttempt) return 0.3; // Never tried = maximum bonus
+
+  const daysSinceAttempt = (Date.now() - lastAttempt) / (24 * 60 * 60 * 1000);
+
+  // Linear bonus: 0.01 per day, max 0.3 (30 days)
+  return Math.min(0.3, daysSinceAttempt * 0.01);
+}
+
+/**
+ * Get sorted models by score (best first) with recency-based exploration
+ * Models not tried recently get a bonus to encourage exploration
+ * @returns {string[]} Array of model IDs sorted by performance + recency
  */
 export function getSortedModels() {
   const cache = loadCache();
-
-  // Apply score decay over time (models that haven't been used in 30 days get lower scores)
   const now = Date.now();
   const thirtyDaysAgo = now - CACHE_DURATION;
 
-  cache.models.forEach(model => {
+  // Calculate final scores with recency bonus
+  const modelsWithScores = cache.models.map(model => {
+    let finalScore = model.score;
+
+    // Apply score decay over time (models that haven't been used in 30 days get lower scores)
     if (model.lastSuccess && model.lastSuccess < thirtyDaysAgo) {
-      model.score *= SCORE_DECAY;
+      finalScore *= SCORE_DECAY;
     }
+
+    // Add recency bonus to encourage trying models not attempted recently
+    const lastAttempt = Math.max(model.lastSuccess || 0, model.lastFailure || 0);
+    const recencyBonus = calculateRecencyBonus(lastAttempt);
+    finalScore += recencyBonus;
+
+    // Cap at 1.0
+    finalScore = Math.min(1.0, finalScore);
+
+    return {
+      id: model.id,
+      baseScore: model.score,
+      recencyBonus,
+      finalScore,
+      lastAttempt
+    };
   });
 
-  // Sort by score (highest first)
-  const sorted = cache.models
-    .sort((a, b) => b.score - a.score)
-    .map(m => m.id);
+  // Sort by final score (highest first)
+  const sorted = modelsWithScores
+    .sort((a, b) => b.finalScore - a.finalScore)
+    .map(m => {
+      // Log scoring details for top 3
+      const rank = modelsWithScores.indexOf(m) + 1;
+      if (rank <= 3) {
+        const daysSince = m.lastAttempt
+          ? Math.floor((now - m.lastAttempt) / (24 * 60 * 60 * 1000))
+          : 'never';
+        console.log(`   #${rank} ${m.id}: base=${m.baseScore.toFixed(2)}, recency=+${m.recencyBonus.toFixed(2)}, final=${m.finalScore.toFixed(2)} (last: ${daysSince} days)`);
+      }
+      return m.id;
+    });
 
   return sorted;
 }
@@ -216,20 +259,36 @@ export function cleanupPoorPerformers() {
  */
 export function getCacheStats() {
   const cache = loadCache();
+  const now = Date.now();
+
+  // Calculate final scores for all models (same logic as getSortedModels)
+  const modelsWithScores = cache.models.map(model => {
+    const lastAttempt = Math.max(model.lastSuccess || 0, model.lastFailure || 0);
+    const recencyBonus = calculateRecencyBonus(lastAttempt);
+    const finalScore = Math.min(1.0, model.score + recencyBonus);
+
+    const daysSinceAttempt = lastAttempt
+      ? Math.floor((now - lastAttempt) / (24 * 60 * 60 * 1000))
+      : null;
+
+    return {
+      id: model.id,
+      baseScore: parseFloat(model.score.toFixed(2)),
+      recencyBonus: parseFloat(recencyBonus.toFixed(2)),
+      finalScore: parseFloat(finalScore.toFixed(2)),
+      successCount: model.successCount,
+      failureCount: model.failureCount,
+      daysSinceLastAttempt: daysSinceAttempt
+    };
+  });
 
   return {
     totalModels: cache.models.length,
     lastFetch: new Date(cache.lastFetch).toISOString(),
     cacheAge: Date.now() - cache.lastFetch,
     isStale: isCacheStale(cache),
-    topModels: cache.models
-      .sort((a, b) => b.score - a.score)
+    topModels: modelsWithScores
+      .sort((a, b) => b.finalScore - a.finalScore)
       .slice(0, 5)
-      .map(m => ({
-        id: m.id,
-        score: m.score.toFixed(2),
-        successCount: m.successCount,
-        failureCount: m.failureCount
-      }))
   };
 }
