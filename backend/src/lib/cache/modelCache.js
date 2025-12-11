@@ -163,42 +163,137 @@ export function recordFailure(modelId) {
 }
 
 /**
- * Get sorted models by score (best first)
- * @returns {string[]} Array of model IDs sorted by performance
+ * Calculate recency bonus - models not tried recently get higher priority
+ * @param {number} lastAttempt - Timestamp of last attempt (success or failure)
+ * @returns {number} Bonus score (0.0 to 0.5)
  */
-export function getSortedModels() {
-  const cache = loadCache();
+function calculateRecencyBonus(lastAttempt) {
+  if (!lastAttempt) return 0.5; // Never tried = maximum bonus
 
-  // Apply score decay over time (models that haven't been used in 30 days get lower scores)
-  const now = Date.now();
-  const thirtyDaysAgo = now - CACHE_DURATION;
+  const daysSinceAttempt = (Date.now() - lastAttempt) / (24 * 60 * 60 * 1000);
 
-  cache.models.forEach(model => {
-    if (model.lastSuccess && model.lastSuccess < thirtyDaysAgo) {
-      model.score *= SCORE_DECAY;
-    }
-  });
-
-  // Sort by score (highest first)
-  const sorted = cache.models
-    .sort((a, b) => b.score - a.score)
-    .map(m => m.id);
-
-  return sorted;
+  // Linear bonus: 0.02 per day, max 0.5 (25 days)
+  return Math.min(0.5, daysSinceAttempt * 0.02);
 }
 
 /**
- * Clean up models with consistently poor performance
+ * Calculate performance score based on success/failure ratio
+ * This is the "quality" score used for ranking and deletion
+ * @param {Object} model - Model object with success/failure counts
+ * @returns {number} Performance score (0.0 to 1.0)
+ */
+function calculatePerformanceScore(model) {
+  const now = Date.now();
+  const thirtyDaysAgo = now - CACHE_DURATION;
+
+  let performanceScore = model.score;
+
+  // Apply score decay over time (models that haven't been used in 30 days get lower scores)
+  if (model.lastSuccess && model.lastSuccess < thirtyDaysAgo) {
+    performanceScore *= SCORE_DECAY;
+  }
+
+  return performanceScore;
+}
+
+/**
+ * Weighted random selection based on priority scores
+ * Higher priority = higher chance of being selected
+ * @param {Array} modelsWithScores - Array of models with scores
+ * @returns {string[]} Array of model IDs in weighted random order
+ */
+function weightedRandomSort(modelsWithScores) {
+  const result = [];
+  const remaining = [...modelsWithScores];
+
+  while (remaining.length > 0) {
+    // Calculate total priority of remaining models
+    const totalPriority = remaining.reduce((sum, m) => sum + m.priorityScore, 0);
+
+    // Pick random number between 0 and total priority
+    let random = Math.random() * totalPriority;
+
+    // Select model based on weighted probability
+    let selectedIndex = 0;
+    for (let i = 0; i < remaining.length; i++) {
+      random -= remaining[i].priorityScore;
+      if (random <= 0) {
+        selectedIndex = i;
+        break;
+      }
+    }
+
+    // Add selected model to result and remove from remaining
+    const selected = remaining.splice(selectedIndex, 1)[0];
+    result.push(selected);
+  }
+
+  return result;
+}
+
+/**
+ * Get models sorted by weighted random selection based on priority
+ * Higher priority = higher chance of being first, but it's randomized
+ * Performance score is separate and used only for deletion
+ * @returns {string[]} Array of model IDs in weighted random order
+ */
+export function getSortedModels() {
+  const cache = loadCache();
+  const now = Date.now();
+
+  // Calculate both performance and priority scores
+  const modelsWithScores = cache.models.map(model => {
+    // Performance score (for deletion/ranking) - pure success/failure ratio
+    const performanceScore = calculatePerformanceScore(model);
+
+    // Priority score (for selection) - performance + recency bonus
+    const lastAttempt = Math.max(model.lastSuccess || 0, model.lastFailure || 0);
+    const recencyBonus = calculateRecencyBonus(lastAttempt);
+    const priorityScore = Math.max(0.01, performanceScore + recencyBonus); // Min 0.01 for weighted random
+
+    return {
+      id: model.id,
+      performanceScore,    // Shown score, used for deletion
+      recencyBonus,
+      priorityScore,       // Used for weighted random selection
+      lastAttempt
+    };
+  });
+
+  // Sort by weighted random selection based on priority scores
+  const sorted = weightedRandomSort(modelsWithScores);
+
+  // Log selection probabilities for top 3
+  const totalPriority = modelsWithScores.reduce((sum, m) => sum + m.priorityScore, 0);
+  sorted.slice(0, 3).forEach((m, index) => {
+    const probability = ((m.priorityScore / totalPriority) * 100).toFixed(1);
+    const daysSince = m.lastAttempt
+      ? Math.floor((now - m.lastAttempt) / (24 * 60 * 60 * 1000))
+      : 'never';
+    console.log(`   #${index + 1} ${m.id}: performance=${m.performanceScore.toFixed(2)}, priority=${m.priorityScore.toFixed(2)}, chance=${probability}% (last: ${daysSince} days)`);
+  });
+
+  return sorted.map(m => m.id);
+}
+
+/**
+ * Clean up models with consistently poor PERFORMANCE (not priority)
+ * Uses performance score only - recency doesn't save bad models from deletion
  */
 export function cleanupPoorPerformers() {
   const cache = loadCache();
   const initialCount = cache.models.length;
 
-  // Remove models with very low scores and multiple failures
+  // Remove models with very low PERFORMANCE scores and multiple failures
+  // Note: We use model.score (performance), not priority score
   cache.models = cache.models.filter(model => {
-    const shouldKeep = model.score > 0.1 || model.successCount > 0;
+    const performanceScore = calculatePerformanceScore(model);
+
+    // Keep if: performance > 0.1 OR has at least one success
+    const shouldKeep = performanceScore > 0.1 || model.successCount > 0;
+
     if (!shouldKeep) {
-      console.log(`🗑️  Removing low-performing model: ${model.id}`);
+      console.log(`🗑️  Removing low-performing model: ${model.id} (performance: ${performanceScore.toFixed(2)})`);
     }
     return shouldKeep;
   });
@@ -212,24 +307,45 @@ export function cleanupPoorPerformers() {
 
 /**
  * Get cache statistics for monitoring
+ * Shows both performance (quality) and priority (selection order) scores
  * @returns {Object} Statistics about cached models
  */
 export function getCacheStats() {
   const cache = loadCache();
+  const now = Date.now();
+
+  // Calculate both performance and priority scores (same logic as getSortedModels)
+  const modelsWithScores = cache.models.map(model => {
+    const performanceScore = calculatePerformanceScore(model);
+    const lastAttempt = Math.max(model.lastSuccess || 0, model.lastFailure || 0);
+    const recencyBonus = calculateRecencyBonus(lastAttempt);
+    const priorityScore = Math.min(1.5, performanceScore + recencyBonus);
+
+    const daysSinceAttempt = lastAttempt
+      ? Math.floor((now - lastAttempt) / (24 * 60 * 60 * 1000))
+      : null;
+
+    return {
+      id: model.id,
+      performanceScore: parseFloat(performanceScore.toFixed(2)),  // Quality/ranking score
+      recencyBonus: parseFloat(recencyBonus.toFixed(2)),
+      priorityScore: parseFloat(priorityScore.toFixed(2)),        // Selection order score
+      successCount: model.successCount,
+      failureCount: model.failureCount,
+      daysSinceLastAttempt: daysSinceAttempt
+    };
+  });
 
   return {
     totalModels: cache.models.length,
     lastFetch: new Date(cache.lastFetch).toISOString(),
     cacheAge: Date.now() - cache.lastFetch,
     isStale: isCacheStale(cache),
-    topModels: cache.models
-      .sort((a, b) => b.score - a.score)
+    topModelsByPriority: modelsWithScores
+      .sort((a, b) => b.priorityScore - a.priorityScore)
+      .slice(0, 5),
+    topModelsByPerformance: modelsWithScores
+      .sort((a, b) => b.performanceScore - a.performanceScore)
       .slice(0, 5)
-      .map(m => ({
-        id: m.id,
-        score: m.score.toFixed(2),
-        successCount: m.successCount,
-        failureCount: m.failureCount
-      }))
   };
 }
