@@ -2,7 +2,7 @@
 
 A production-ready full-stack blog application with AI-powered content generation, built with React, Node.js, PostgreSQL, Docker, and AWS deployment infrastructure.
 
-🔗 **Live Demo**: http://52.90.3.31 (AWS EC2 deployment)
+🔗 **Live Demo**: http://44.196.118.30 (AWS EC2 deployment)
 
 ## 🚀 Features
 
@@ -273,7 +273,7 @@ HUGGINGFACE_API_KEY=hf_your_actual_key  # Get from https://huggingface.co/settin
 
 The application is **production-deployed** on AWS using EC2, ECR, and CodeBuild.
 
-🔗 **Live Application**: http://52.90.3.31
+🔗 **Live Application**: http://44.196.118.30
 
 ### Deployed Infrastructure
 
@@ -349,7 +349,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete system architectur
 
 ## 🎯 Production Status
 
-The application is **LIVE** and deployed on AWS EC2: http://52.90.3.31
+The application is **LIVE** and deployed on AWS EC2: http://44.196.118.30
 
 **Production Features**:
 - ✅ Full CI/CD pipeline (GitHub → CodeBuild → ECR → EC2)
@@ -364,9 +364,9 @@ The application is **LIVE** and deployed on AWS EC2: http://52.90.3.31
 - ✅ Intelligent error handling and logging
 
 **Live Endpoints**:
-- **Frontend**: http://52.90.3.31
-- **Backend API**: http://52.90.3.31:3001/health
-- **Cache Dashboard**: http://52.90.3.31:3001/cache-stats
+- **Frontend**: http://44.196.118.30
+- **Backend API**: http://44.196.118.30:3001/health
+- **Cache Dashboard**: http://44.196.118.30:3001/cache-stats
 
 **Quick Start Locally**:
 ```bash

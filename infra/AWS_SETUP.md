@@ -603,7 +603,7 @@ aws codebuild update-project \
         "environmentVariables": [
             {
                 "name": "VITE_API_URL",
-                "value": "http://52.90.3.31:3001/api",
+                "value": "http://44.196.118.30:3001/api",
                 "type": "PLAINTEXT"
             },
             {
